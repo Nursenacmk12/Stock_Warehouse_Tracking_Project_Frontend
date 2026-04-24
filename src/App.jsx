@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import "./App.css";
 
 function App() {
@@ -81,6 +82,15 @@ function App() {
               Giriş Yap
             </button>
           </form>
+
+          <div className="form-footer">
+            <p>
+              Hesabınız yok mu?{" "}
+              <Link to="/register" className="link">
+                Kayıt Ol
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
