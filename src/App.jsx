@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/useAuth.js";
 import "./App.css";
 
@@ -114,12 +114,7 @@ function App() {
           </form>
 
           <div className="form-footer">
-            <p>
-              Hesabınız yok mu?{" "}
-              <Link to="/register" className="link">
-                Kayıt Ol
-              </Link>
-            </p>
+            <p>Hesap oluşturmak için sistem yöneticinize başvurun.</p>
           </div>
         </div>
       </section>

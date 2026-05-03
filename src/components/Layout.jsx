@@ -1,13 +1,15 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth.js";
+import { useTheme } from "../context/useTheme.js";
 import "./Layout.css";
 
 const menuItems = [
   { path: "/dashboard", label: "Gösterge Paneli", icon: "dashboard" },
-  { path: "/products", label: "Ürünler", icon: "products" },
-  { path: "/categories", label: "Kategoriler", icon: "categories" },
+  { path: "/products", label: "Ürünler", icon: "products", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
+  { path: "/categories", label: "Kategoriler", icon: "categories", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
   { path: "/movements", label: "Stok Hareketleri", icon: "movements" },
-  { path: "/settings", label: "Ayarlar", icon: "settings" },
+  { path: "/settings", label: "Ayarlar", icon: "settings", roles: ["SuperAdmin", "Admin"] },
+  { path: "/admin/users", label: "Kullanıcı Yönetimi", icon: "users", roles: ["SuperAdmin"] },
 ];
 
 const icons = {
@@ -40,9 +42,28 @@ const icons = {
       <circle cx="12" cy="12" r="3" />
     </svg>
   ),
+  users: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
   logout: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+    </svg>
+  ),
+  sun: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="5" />
+      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+    </svg>
+  ),
+  moon: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
     </svg>
   ),
 };
@@ -59,6 +80,7 @@ function userInitials(displayName) {
 function Layout({ children }) {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     logout();
@@ -77,20 +99,26 @@ function Layout({ children }) {
         </div>
 
         <nav className="sidebar-nav" aria-label="Ana menü">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
-              title={item.label}
-            >
-              <span className="nav-icon">{icons[item.icon]}</span>
-              <span className="nav-label">{item.label}</span>
-            </NavLink>
-          ))}
+          {menuItems
+            .filter((item) => !item.roles || item.roles.includes(user?.role))
+            .map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+                title={item.label}
+              >
+                <span className="nav-icon">{icons[item.icon]}</span>
+                <span className="nav-label">{item.label}</span>
+              </NavLink>
+            ))}
         </nav>
 
         <div className="sidebar-footer">
+          <button className="theme-toggle-btn" onClick={toggleTheme} type="button" title={theme === "dark" ? "Açık tema" : "Koyu tema"}>
+            <span className="nav-icon">{theme === "dark" ? icons.sun : icons.moon}</span>
+            <span className="nav-label">{theme === "dark" ? "Açık Tema" : "Koyu Tema"}</span>
+          </button>
           <button className="logout-btn" onClick={handleLogout} type="button">
             <span className="nav-icon">{icons.logout}</span>
             <span className="nav-label">Çıkış Yap</span>

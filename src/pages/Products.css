@@ -1,5 +1,11 @@
 .products-toolbar {
   align-items: stretch;
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  box-shadow: var(--shadow-card);
 }
 
 .products-toolbar .btn-secondary {
@@ -12,27 +18,30 @@
 
 .product-cell {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
 .product-cell strong {
   color: var(--text);
   font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .product-cell span {
   color: var(--muted);
   font-size: 12px;
+  font-weight: 600;
 }
 
 .category-chip {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 999px;
-  background: #eef2ff;
+  background: linear-gradient(180deg, #eef2ff, #e0e7ff);
   color: #3730a3;
-  padding: 5px 10px;
+  padding: 5px 12px;
   font-size: 12px;
   font-weight: 750;
   white-space: nowrap;
@@ -41,16 +50,16 @@
 .action-buttons {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   white-space: nowrap;
 }
 
 .product-name {
   margin: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-muted);
-  padding: 11px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  padding: 12px 14px;
   color: var(--text);
   font-weight: 800;
 }

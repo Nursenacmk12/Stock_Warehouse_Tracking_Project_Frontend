@@ -2,57 +2,68 @@
   min-width: 840px;
 }
 
+.movements-table tbody tr {
+  transition: background 0.16s ease;
+}
+
 .date-cell {
   color: var(--muted);
   font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .description-cell {
-  max-width: 380px;
+  max-width: 400px;
   color: #475569;
+  line-height: 1.45;
 }
 
 .type-badge {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 28px;
+  gap: 8px;
+  min-height: 30px;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset;
 }
 
 .type-badge.add,
 .type-badge.increase {
-  background: var(--green-soft);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  background: linear-gradient(180deg, #ecfdf5, var(--green-soft));
   color: var(--green);
 }
 
 .type-badge.delete,
 .type-badge.decrease {
-  background: var(--danger-soft);
+  border: 1px solid rgba(190, 18, 60, 0.18);
+  background: linear-gradient(180deg, #fff1f2, var(--danger-soft));
   color: var(--danger);
 }
 
 .type-badge.edit {
-  background: var(--blue-soft);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  background: linear-gradient(180deg, #eff6ff, var(--blue-soft));
   color: var(--blue);
 }
 
 .type-icon {
   display: grid;
   place-items: center;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
 }
 
 .type-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 @media (max-width: 768px) {

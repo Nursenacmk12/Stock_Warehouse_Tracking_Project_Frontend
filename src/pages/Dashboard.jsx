@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getCategories,
   getLowStockProducts,
@@ -6,6 +6,7 @@ import {
   getTodayAddedCount,
   getTotalStock,
 } from "../data/mockData";
+import { apiFetch } from "../services/apiClient.js";
 import "./Dashboard.css";
 
 const icons = {
@@ -42,6 +43,21 @@ const icons = {
 };
 
 function Dashboard() {
+  const [sapStatus, setSapStatus] = useState("checking");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { res } = await apiFetch("/health/sap");
+        if (!cancelled) setSapStatus(res.ok ? "healthy" : "unhealthy");
+      } catch {
+        if (!cancelled) setSapStatus("unhealthy");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const summary = useMemo(() => {
     const products = getProducts();
     const categories = getCategories();
@@ -129,6 +145,20 @@ function Dashboard() {
             <span className="kpi-label">Bugün Eklenen</span>
           </div>
         </article>
+      </section>
+
+      <section className="sap-status-bar" aria-label="SAP bağlantı durumu">
+        <div className={`sap-indicator ${sapStatus}`}>
+          <span className="sap-dot" />
+          <strong>SAP Bağlantısı</strong>
+          <span>
+            {sapStatus === "checking"
+              ? "Kontrol ediliyor..."
+              : sapStatus === "healthy"
+                ? "Aktif"
+                : "Bağlantı kesik"}
+          </span>
+        </div>
       </section>
 
       <section className="dashboard-grid">

@@ -1,26 +1,55 @@
 :root {
-  --bg: #f6f7fb;
+  --bg: #eef1f8;
+  --bg-accent: #e0e7ff;
   --surface: #ffffff;
-  --surface-muted: #f8fafc;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --text: #142033;
-  --muted: #64748b;
-  --soft: #94a3b8;
-  --primary: #0f766e;
-  --primary-strong: #0b5f59;
+  --surface-muted: #f4f6fb;
+  --border: #e1e7ef;
+  --border-strong: #c8d1e0;
+  --text: #0f172a;
+  --muted: #5c6b82;
+  --soft: #8b9cb3;
+  --primary: #0d9488;
+  --primary-strong: #0f766e;
   --primary-soft: #ccfbf1;
   --blue: #2563eb;
-  --blue-soft: #dbeafe;
-  --green: #15803d;
-  --green-soft: #dcfce7;
+  --blue-soft: #e8efff;
+  --green: #059669;
+  --green-soft: #d1fae5;
   --amber: #b45309;
   --amber-soft: #fef3c7;
   --danger: #be123c;
   --danger-soft: #ffe4e6;
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.08);
-  --radius: 8px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.09);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 24px rgba(15, 23, 42, 0.06);
+  --radius: 10px;
+  --radius-lg: 14px;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --bg-accent: #1e293b;
+  --surface: #1e293b;
+  --surface-muted: #334155;
+  --border: #334155;
+  --border-strong: #475569;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --soft: #64748b;
+  --primary: #2dd4bf;
+  --primary-strong: #14b8a6;
+  --primary-soft: #042f2e;
+  --blue: #60a5fa;
+  --blue-soft: #1e3a5f;
+  --green: #34d399;
+  --green-soft: #064e3b;
+  --amber: #fbbf24;
+  --amber-soft: #451a03;
+  --danger: #fb7185;
+  --danger-soft: #4c0519;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 18px 40px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 * {
@@ -37,12 +66,13 @@ html {
 body {
   min-width: 320px;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-optical-sizing: auto;
   background: var(--bg);
   color: var(--text);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -73,9 +103,22 @@ svg {
 
 .page {
   width: 100%;
-  max-width: 1440px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 28px;
+  padding: 32px 28px 40px;
+  animation: pageEnter 0.45s ease both;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header {
@@ -87,11 +130,12 @@ svg {
 }
 
 .page-header h1 {
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   color: var(--text);
-  font-size: 26px;
-  font-weight: 750;
-  line-height: 1.15;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
 }
 
 .page-header p {
@@ -114,9 +158,9 @@ svg {
 .panel-card {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .panel-card {
@@ -234,9 +278,10 @@ svg {
 .data-table th {
   background: var(--surface-muted);
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .data-table td {
@@ -252,11 +297,11 @@ svg {
 }
 
 .data-table tbody tr:hover {
-  background: #f8fafc;
+  background: linear-gradient(90deg, rgba(13, 148, 136, 0.04), transparent 48%);
 }
 
 .danger-row {
-  background: #fff7f7;
+  background: rgba(190, 18, 60, 0.04);
 }
 
 .danger-row:hover {
@@ -306,8 +351,8 @@ svg {
 }
 
 .badge.neutral {
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--surface-muted);
+  color: var(--muted);
 }
 
 .btn {
@@ -339,9 +384,9 @@ svg {
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(145deg, #14b8a6, var(--primary-strong));
   color: #ffffff;
-  box-shadow: 0 10px 20px rgba(15, 118, 110, 0.2);
+  box-shadow: 0 10px 24px rgba(13, 148, 136, 0.28);
 }
 
 .btn-primary:hover {
@@ -428,7 +473,7 @@ svg {
 .form-group label {
   display: block;
   margin-bottom: 7px;
-  color: #334155;
+  color: var(--text);
   font-size: 13px;
   font-weight: 750;
 }
@@ -444,7 +489,7 @@ svg {
 .form-group select.error,
 .form-group input.input-error {
   border-color: var(--danger);
-  background: #fff8f9;
+  background: var(--danger-soft);
 }
 
 .field-error,
@@ -473,14 +518,14 @@ svg {
 }
 
 .message.error {
-  border: 1px solid #fecdd3;
-  background: #fff1f2;
+  border: 1px solid var(--danger);
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
 .message.success {
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
+  border: 1px solid var(--green);
+  background: var(--green-soft);
   color: var(--green);
 }
 
@@ -582,7 +627,8 @@ svg {
   place-items: center;
   padding: 28px;
   background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(37, 99, 235, 0.07)),
+    radial-gradient(ellipse 120% 80% at 50% -30%, rgba(13, 148, 136, 0.14), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 50%, rgba(37, 99, 235, 0.08), transparent),
     var(--bg);
 }
 
@@ -592,10 +638,10 @@ svg {
   width: min(100%, 980px);
   min-height: 590px;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: var(--radius);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
 }
 
 .auth-brand-panel {
