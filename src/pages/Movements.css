@@ -1,0 +1,62 @@
+.movements-table {
+  min-width: 840px;
+}
+
+.date-cell {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.description-cell {
+  max-width: 380px;
+  color: #475569;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.type-badge.add,
+.type-badge.increase {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.type-badge.delete,
+.type-badge.decrease {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.type-badge.edit {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.type-icon {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.type-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 768px) {
+  .description-cell {
+    max-width: 240px;
+  }
+}
