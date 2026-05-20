@@ -1,16 +1,19 @@
-import { useEffect, lazy, Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import App from "./App.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Products from "./pages/Products.jsx";
+import Warehouses from "./pages/Warehouses.jsx";
+import Stocks from "./pages/Stocks.jsx";
 import Categories from "./pages/Categories.jsx";
 import Movements from "./pages/Movements.jsx";
+import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
+import Register from "./pages/Register.jsx";
 import Layout from "./components/Layout.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { useAuth } from "./context/useAuth.js";
-import { initializeData } from "./data/mockData.js";
 import "./App.css";
 
 const Users = lazy(() => import("./pages/admin/Users.jsx"));
@@ -31,16 +34,13 @@ function PrivateRoute({ children, allowedRoles }) {
 }
 
 export function AppRoutes() {
-  useEffect(() => {
-    initializeData();
-  }, []);
-
   return (
     <ThemeProvider>
     <AuthProvider>
       <Suspense fallback={null}>
       <Routes>
         <Route path="/" element={<App />} />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/dashboard"
           element={
@@ -58,10 +58,34 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="/warehouses"
+          element={
+            <PrivateRoute allowedRoles={["SuperAdmin", "Admin", "WarehouseManager"]}>
+              <Warehouses />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/stocks"
+          element={
+            <PrivateRoute>
+              <Stocks />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/categories"
           element={
             <PrivateRoute allowedRoles={["SuperAdmin", "Admin", "WarehouseManager"]}>
               <Categories />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <PrivateRoute allowedRoles={["SuperAdmin", "Admin"]}>
+              <Reports />
             </PrivateRoute>
           }
         />

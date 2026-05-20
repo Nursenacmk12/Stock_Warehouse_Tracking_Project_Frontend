@@ -1,8 +1,6 @@
-import { createContext, useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import { loginWithApi } from "../services/authApi.js";
-
-const TOKEN_KEY = "stock_auth_token";
-const USER_KEY = "stock_auth_user";
+import { setUnauthorizedHandler, TOKEN_KEY, USER_KEY } from "../services/apiClient.js";
 
 function readSession() {
   try {
@@ -58,6 +56,11 @@ function AuthProvider({ children }) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+    return () => setUnauthorizedHandler(null);
+  }, [logout]);
 
   const value = useMemo(
     () => ({ isAuthenticated, token, user, login, logout }),

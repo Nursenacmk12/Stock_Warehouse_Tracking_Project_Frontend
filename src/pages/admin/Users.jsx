@@ -3,13 +3,6 @@ import { Link } from "react-router-dom";
 import { fetchUsers, fetchRoles, changeUserRole, deleteUser } from "../../services/userApi.js";
 import "./Users.css";
 
-const roleBadgeClass = {
-  SuperAdmin: "badge danger",
-  Admin: "badge warning",
-  WarehouseManager: "badge success",
-  Manager: "badge neutral",
-};
-
 function Users() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -27,7 +20,10 @@ function Users() {
   }, []);
 
   useEffect(() => {
-    loadData();
+    const timer = window.setTimeout(() => {
+      loadData();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadData]);
 
   const handleRoleChange = async (userId, newRoleId) => {

@@ -22,8 +22,8 @@ function CreateUser() {
     fetchRoles().then((res) => {
       if (res.ok) {
         setRoles(res.data);
-        if (res.data.length > 0 && !formData.roleId) {
-          setFormData((prev) => ({ ...prev, roleId: String(res.data[0].roleId) }));
+        if (res.data.length > 0) {
+          setFormData((prev) => (prev.roleId ? prev : { ...prev, roleId: String(res.data[0].roleId) }));
         }
       }
     });

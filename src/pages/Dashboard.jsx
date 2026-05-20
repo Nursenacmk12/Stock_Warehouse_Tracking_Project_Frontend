@@ -1,85 +1,130 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  getCategories,
-  getLowStockProducts,
-  getProducts,
-  getTodayAddedCount,
-  getTotalStock,
-} from "../data/mockData";
-import { apiFetch } from "../services/apiClient.js";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, DataTable, EmptyState, KpiCard, StatusBadge, Toast } from "../components/ui/CommonUI.jsx";
+import { fetchMovements } from "../services/movementApi.js";
+import { fetchProducts } from "../services/productApi.js";
+import { fetchHealth } from "../services/systemApi.js";
+import { fetchStocks } from "../services/stockApi.js";
+import { fetchWarehouses } from "../services/warehouseApi.js";
 import "./Dashboard.css";
 
-const icons = {
-  box: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-    </svg>
-  ),
-  alert: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 9v3.5" />
-      <path d="M12 17h.01" />
-      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
-    </svg>
-  ),
-  tag: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M7 7h.01" />
-      <path d="M3 11.5V7a4 4 0 0 1 4-4h4.5L21 12.5 12.5 21 3 11.5Z" />
-    </svg>
-  ),
-  layers: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="m12 2 9 5-9 5-9-5 9-5Z" />
-      <path d="m3 12 9 5 9-5" />
-      <path d="m3 17 9 5 9-5" />
-    </svg>
-  ),
-  spark: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M13 2 3 14h8l-1 8 11-13h-8l0-7Z" />
-    </svg>
-  ),
-};
+function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("tr-TR");
+}
 
 function Dashboard() {
+  const [products, setProducts] = useState([]);
+  const [stocks, setStocks] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [movements, setMovements] = useState([]);
   const [sapStatus, setSapStatus] = useState("checking");
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState({ type: "", text: "" });
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setSapStatus("checking");
+    try {
+      const [nextProducts, nextStocks, nextWarehouses, nextMovements, sapHealth] = await Promise.all([
+        fetchProducts(),
+        fetchStocks(),
+        fetchWarehouses(),
+        fetchMovements({ page: 1, pageSize: 8 }),
+        fetchHealth("/health/sap"),
+      ]);
+      setProducts(nextProducts);
+      setStocks(nextStocks);
+      setWarehouses(nextWarehouses);
+      setMovements(nextMovements.items);
+      setSapStatus(sapHealth.ok ? "healthy" : "unhealthy");
+      setMessage({ type: "", text: "" });
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+      setSapStatus("unhealthy");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { res } = await apiFetch("/health/sap");
-        if (!cancelled) setSapStatus(res.ok ? "healthy" : "unhealthy");
-      } catch {
-        if (!cancelled) setSapStatus("unhealthy");
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    const timer = window.setTimeout(() => {
+      loadData();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadData]);
+
+  const productByCode = useMemo(() => {
+    return products.reduce((acc, product) => {
+      acc[product.code] = product;
+      return acc;
+    }, {});
+  }, [products]);
+
+  const stockByMaterial = useMemo(() => {
+    return stocks.reduce((acc, stock) => {
+      acc[stock.materialNo] = (acc[stock.materialNo] ?? 0) + stock.quantity;
+      return acc;
+    }, {});
+  }, [stocks]);
+
+  const warehouseTotals = useMemo(() => {
+    const grouped = stocks.reduce((acc, stock) => {
+      acc[stock.warehouseId] = (acc[stock.warehouseId] ?? 0) + stock.quantity;
+      return acc;
+    }, {});
+
+    return Object.entries(grouped)
+      .map(([code, quantity]) => ({
+        code,
+        name: warehouses.find((warehouse) => warehouse.code === code)?.name ?? code,
+        quantity,
+      }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 6);
+  }, [stocks, warehouses]);
+
+  const categoryTotals = useMemo(() => {
+    const grouped = products.reduce((acc, product) => {
+      const category = product.category || "Genel";
+      acc[category] = (acc[category] ?? 0) + (stockByMaterial[product.code] ?? 0);
+      return acc;
+    }, {});
+
+    return Object.entries(grouped)
+      .map(([name, quantity]) => ({ name, quantity }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
+  }, [products, stockByMaterial]);
 
   const summary = useMemo(() => {
-    const products = getProducts();
-    const categories = getCategories();
-    const lowStock = getLowStockProducts();
-    const totalStock = getTotalStock();
-    const healthyStock = products.length - lowStock.length;
+    const totalStock = stocks.reduce((sum, stock) => sum + stock.quantity, 0);
+    const emptyMaterials = stocks.filter((stock) => stock.quantity <= 0).length;
+    const sapOnly = products.filter((product) => product.isSapOnly).length;
 
     return {
-      products,
-      categories,
-      lowStock,
       totalStock,
-      healthyStock,
-      todayAdded: getTodayAddedCount(),
+      emptyMaterials,
+      sapOnly,
+      products: products.length,
+      warehouses: warehouses.length,
+      movements: movements.length,
     };
-  }, []);
+  }, [movements.length, products, stocks, warehouses.length]);
 
-  const recentProducts = useMemo(() => getProducts().slice(0, 6), []);
-  const lowStockProducts = useMemo(() => getLowStockProducts().slice(0, 6), []);
-  const criticalRate = summary.products.length
-    ? Math.round((summary.lowStock.length / summary.products.length) * 100)
-    : 0;
+  const maxWarehouseQuantity = Math.max(1, ...warehouseTotals.map((item) => item.quantity));
+  const maxCategoryQuantity = Math.max(1, ...categoryTotals.map((item) => item.quantity));
+
+  const movementColumns = [
+    { key: "date", header: "Tarih", render: (row) => formatDate(row.date) },
+    { key: "type", header: "İşlem", render: (row) => <StatusBadge tone={row.typeCode}>{row.typeLabel}</StatusBadge> },
+    {
+      key: "productCode",
+      header: "Malzeme",
+      render: (row) => productByCode[row.productCode]?.name ?? row.productCode,
+    },
+    { key: "quantity", header: "Miktar", className: "numeric-cell" },
+  ];
 
   return (
     <div className="page">
@@ -87,165 +132,99 @@ function Dashboard() {
         <div>
           <span className="eyebrow">Genel bakış</span>
           <h1>Gösterge Paneli</h1>
-          <p>Stok durumunu, kritik ürünleri ve güncel operasyon akışını tek ekranda takip edin.</p>
+          <p>SAP stok sağlığı, operasyon hacmi ve depo dağılımını canlı API verileriyle izleyin.</p>
         </div>
+        <Button onClick={loadData}>Yenile</Button>
       </div>
 
-      <section className="dashboard-hero">
-        <div>
-          <span className="eyebrow">Stok sağlığı</span>
-          <h2>{summary.healthyStock} ürün normal seviyede</h2>
-          <p>
-            Kritik stok oranı %{criticalRate}. Öncelikli aksiyon gereken ürünler sağ panelde
-            listelenir.
-          </p>
-        </div>
-        <div className="hero-meter" aria-label={`Kritik stok oranı yüzde ${criticalRate}`}>
-          <span style={{ width: `${Math.min(criticalRate, 100)}%` }} />
-        </div>
-      </section>
-
-      <section className="stats-grid" aria-label="Stok özeti">
-        <article className="kpi-card">
-          <div className="kpi-icon blue">{icons.box}</div>
-          <div>
-            <span className="kpi-value">{summary.products.length}</span>
-            <span className="kpi-label">Toplam Ürün</span>
-          </div>
-        </article>
-
-        <article className="kpi-card critical">
-          <div className="kpi-icon red">{icons.alert}</div>
-          <div>
-            <span className="kpi-value">{summary.lowStock.length}</span>
-            <span className="kpi-label">Kritik Stok</span>
-          </div>
-        </article>
-
-        <article className="kpi-card">
-          <div className="kpi-icon green">{icons.tag}</div>
-          <div>
-            <span className="kpi-value">{summary.categories.length}</span>
-            <span className="kpi-label">Kategori</span>
-          </div>
-        </article>
-
-        <article className="kpi-card">
-          <div className="kpi-icon amber">{icons.layers}</div>
-          <div>
-            <span className="kpi-value">{summary.totalStock}</span>
-            <span className="kpi-label">Toplam Stok</span>
-          </div>
-        </article>
-
-        <article className="kpi-card">
-          <div className="kpi-icon teal">{icons.spark}</div>
-          <div>
-            <span className="kpi-value">{summary.todayAdded}</span>
-            <span className="kpi-label">Bugün Eklenen</span>
-          </div>
-        </article>
-      </section>
+      <Toast message={message} />
 
       <section className="sap-status-bar" aria-label="SAP bağlantı durumu">
         <div className={`sap-indicator ${sapStatus}`}>
           <span className="sap-dot" />
           <strong>SAP Bağlantısı</strong>
           <span>
-            {sapStatus === "checking"
-              ? "Kontrol ediliyor..."
-              : sapStatus === "healthy"
-                ? "Aktif"
-                : "Bağlantı kesik"}
+            {sapStatus === "checking" ? "Kontrol ediliyor..." : sapStatus === "healthy" ? "Aktif" : "Bağlantı kesik"}
           </span>
         </div>
       </section>
 
+      <section className="stats-grid" aria-label="Operasyon özeti">
+        <KpiCard label="Toplam Ürün" value={summary.products} tone="blue" helper={`${summary.sapOnly} SAP katalog`} />
+        <KpiCard label="Toplam Stok" value={summary.totalStock} tone="green" />
+        <KpiCard label="Depo" value={summary.warehouses} tone="amber" />
+        <KpiCard label="Stoksuz Satır" value={summary.emptyMaterials} tone="red" />
+        <KpiCard label="Son Hareket" value={summary.movements} tone="teal" />
+      </section>
+
       <section className="dashboard-grid">
-        <article className="card">
+        <article className="card chart-card">
           <div className="card-header">
             <div>
-              <h2>Son Ürünler</h2>
-              <p>En yeni ürün kayıtları ve stok durumları</p>
+              <h2>Depo Bazlı Stok</h2>
+              <p>En yüksek miktara sahip depo stokları</p>
             </div>
           </div>
-          <div className="table-wrap">
-            <table className="data-table compact-table">
-              <thead>
-                <tr>
-                  <th>Ürün Adı</th>
-                  <th>Kategori</th>
-                  <th>Stok</th>
-                  <th>Durum</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentProducts.map((product) => {
-                  const isCritical = product.stock < product.minStock;
-
-                  return (
-                    <tr key={product.id} className={isCritical ? "danger-row" : ""}>
-                      <td className="product-title">{product.name}</td>
-                      <td>{product.category}</td>
-                      <td className="numeric-cell">{product.stock}</td>
-                      <td>
-                        <span className={`badge ${isCritical ? "danger" : "success"}`}>
-                          {isCritical ? "Kritik" : "Normal"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </article>
-
-        <article className="card">
-          <div className="card-header">
-            <div>
-              <h2>Kritik Stokta Olanlar</h2>
-              <p>Minimum seviyenin altındaki ürünler</p>
-            </div>
-            <span className="badge danger">{summary.lowStock.length} ürün</span>
-          </div>
-
-          {lowStockProducts.length === 0 ? (
-            <div className="empty-state">
-              {icons.alert}
-              <div>
-                <strong>Kritik stok bulunmuyor</strong>
-                <p>Tüm ürünler minimum stok seviyesinin üzerinde.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="critical-list">
-              {lowStockProducts.map((product) => {
-                const percent = Math.min(
-                  100,
-                  Math.round((product.stock / Math.max(product.minStock, 1)) * 100),
-                );
-
-                return (
-                  <div className="critical-item" key={product.id}>
-                    <div>
-                      <strong>{product.name}</strong>
-                      <span>{product.category}</span>
-                    </div>
-                    <div className="critical-meta">
-                      <span>
-                        {product.stock} / {product.minStock}
-                      </span>
-                      <div className="stock-bar">
-                        <span style={{ width: `${percent}%` }} />
-                      </div>
-                    </div>
+          <div className="bar-list">
+            {warehouseTotals.length === 0 ? (
+              <EmptyState title="Depo stoku yok" text="SAP stok servisi depo dağılımı döndürmedi." />
+            ) : (
+              warehouseTotals.map((item) => (
+                <div className="bar-row" key={item.code}>
+                  <header>
+                    <strong>{item.name}</strong>
+                    <span>{item.quantity}</span>
+                  </header>
+                  <div className="bar-track">
+                    <span style={{ width: `${Math.round((item.quantity / maxWarehouseQuantity) * 100)}%` }} />
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              ))
+            )}
+          </div>
         </article>
+
+        <article className="card chart-card">
+          <div className="card-header">
+            <div>
+              <h2>Kategori Stok Dağılımı</h2>
+              <p>Ürün kategorilerine göre toplam stok</p>
+            </div>
+          </div>
+          <div className="bar-list">
+            {categoryTotals.length === 0 ? (
+              <EmptyState title="Kategori verisi yok" text="Ürün kataloğunda kategori alanı bulunmuyor." />
+            ) : (
+              categoryTotals.map((item) => (
+                <div className="bar-row" key={item.name}>
+                  <header>
+                    <strong>{item.name}</strong>
+                    <span>{item.quantity}</span>
+                  </header>
+                  <div className="bar-track">
+                    <span style={{ width: `${Math.round((item.quantity / maxCategoryQuantity) * 100)}%` }} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </article>
+      </section>
+
+      <section className="card">
+        <div className="card-header">
+          <div>
+            <h2>Son Stok Hareketleri</h2>
+            <p>API’den gelen en güncel operasyon kayıtları</p>
+          </div>
+        </div>
+        <DataTable
+          columns={movementColumns}
+          rows={movements}
+          getRowKey={(row) => row.id}
+          loading={loading}
+          empty={<EmptyState title="Hareket yok" text="Henüz stok hareketi kaydı bulunmuyor." />}
+        />
       </section>
     </div>
   );

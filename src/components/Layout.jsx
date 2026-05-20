@@ -6,8 +6,11 @@ import "./Layout.css";
 const menuItems = [
   { path: "/dashboard", label: "Gösterge Paneli", icon: "dashboard" },
   { path: "/products", label: "Ürünler", icon: "products", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
+  { path: "/warehouses", label: "Depolar", icon: "warehouses", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
+  { path: "/stocks", label: "Stoklar", icon: "stocks" },
   { path: "/categories", label: "Kategoriler", icon: "categories", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
   { path: "/movements", label: "Stok Hareketleri", icon: "movements" },
+  { path: "/reports", label: "Raporlar", icon: "reports", roles: ["SuperAdmin", "Admin"] },
   { path: "/settings", label: "Ayarlar", icon: "settings", roles: ["SuperAdmin", "Admin"] },
   { path: "/admin/users", label: "Kullanıcı Yönetimi", icon: "users", roles: ["SuperAdmin"] },
 ];
@@ -31,9 +34,30 @@ const icons = {
       <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
     </svg>
   ),
+  warehouses: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 21V8l9-5 9 5v13" />
+      <path d="M9 21v-7h6v7" />
+      <path d="M7 10h10" />
+    </svg>
+  ),
+  stocks: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+      <path d="M3 8v8l9 5 9-5V8" />
+      <path d="M12 13v8" />
+    </svg>
+  ),
   movements: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M8 7h12m0 0l-4-4m4 4l-4 4M9 17H7a2 2 0 01-2-2V9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2h-2" />
+    </svg>
+  ),
+  reports: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 19V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+      <path d="M14 3v6h6" />
+      <path d="M8 13h8M8 17h5" />
     </svg>
   ),
   settings: (
@@ -130,7 +154,7 @@ function Layout({ children }) {
         <header className="topbar">
           <div>
             <span className="topbar-kicker">Bugünkü durum</span>
-            <strong>Depo operasyonları hazır</strong>
+            <strong>SAP depo operasyonları canlı</strong>
           </div>
           <div className="topbar-actions">
             <span className="status-pill">Çevrimiçi</span>

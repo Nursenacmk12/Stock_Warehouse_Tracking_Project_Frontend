@@ -1,4 +1,4 @@
-import { apiFetch, formatApiErrorPayload } from "./apiClient.js";
+import { request, toApiResult } from "./apiClient.js";
 
 /**
  * @param {string} email
@@ -6,27 +6,18 @@ import { apiFetch, formatApiErrorPayload } from "./apiClient.js";
  * @returns {Promise<{ ok: true, token: string, userName: string, role: string, expiresAt: string } | { ok: false, message: string }>}
  */
 export async function loginWithApi(email, password) {
-  let res;
-  let json;
-  try {
-    const out = await apiFetch("/api/auth/login", {
+  const result = await toApiResult(
+    request("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email: email.trim(), password }),
-    });
-    res = out.res;
-    json = out.json;
-  } catch {
-    return { ok: false, message: "Sunucuya ulaşılamadı. API’nin çalıştığından emin olun." };
-  }
+      body: { email: email.trim(), password },
+    }),
+  );
+  if (!result.ok) return { ok: false, message: result.message };
 
-  if (!res.ok) {
-    return { ok: false, message: formatApiErrorPayload(json) };
-  }
-
-  const token = json?.token ?? "";
-  const userName = json?.userName ?? "";
-  const role = json?.role ?? "";
-  const expiresAt = json?.expiresAt ?? "";
+  const token = result.data?.token ?? "";
+  const userName = result.data?.userName ?? "";
+  const role = result.data?.role ?? "";
+  const expiresAt = result.data?.expiresAt ?? "";
 
   if (!token) {
     return { ok: false, message: "Sunucu geçerli bir oturum anahtarı döndürmedi." };
@@ -46,22 +37,8 @@ export async function registerWithApi(payload) {
     roleId: payload.roleId ?? 2,
   };
 
-  let res;
-  let json;
-  try {
-    const out = await apiFetch("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    res = out.res;
-    json = out.json;
-  } catch {
-    return { ok: false, message: "Sunucuya ulaşılamadı. API’nin çalıştığından emin olun." };
-  }
+  const result = await toApiResult(request("/api/auth/register", { method: "POST", body }));
+  if (!result.ok) return { ok: false, message: result.message };
 
-  if (!res.ok) {
-    return { ok: false, message: formatApiErrorPayload(json) };
-  }
-
-  return { ok: true, message: json?.message ?? "Kayıt tamamlandı." };
+  return { ok: true, message: result.data?.message ?? "Kayıt tamamlandı." };
 }

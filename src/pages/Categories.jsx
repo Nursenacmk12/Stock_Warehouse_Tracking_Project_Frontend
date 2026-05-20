@@ -1,85 +1,115 @@
-import { useMemo } from "react";
-import { getCategories, getProducts } from "../data/mockData";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, DataTable, EmptyState, FilterBar, StatusBadge, Toast } from "../components/ui/CommonUI.jsx";
+import { fetchProducts } from "../services/productApi.js";
+import { fetchStocks } from "../services/stockApi.js";
 import "./Categories.css";
 
-const icons = {
-  empty: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M7 7h.01" />
-      <path d="M3 11.5V7a4 4 0 0 1 4-4h4.5L21 12.5 12.5 21 3 11.5Z" />
-    </svg>
-  ),
-};
-
 function Categories() {
-  const categoryStats = useMemo(() => {
-    const categories = getCategories();
-    const products = getProducts();
+  const [products, setProducts] = useState([]);
+  const [stocks, setStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [message, setMessage] = useState({ type: "", text: "" });
 
-    return categories.map((category) => {
-      const categoryProducts = products.filter((product) => product.category === category.name);
-      const totalStock = categoryProducts.reduce((sum, product) => sum + product.stock, 0);
-      const lowStock = categoryProducts.filter(
-        (product) => product.stock < product.minStock,
-      ).length;
-
-      return {
-        ...category,
-        productCount: categoryProducts.length,
-        totalStock,
-        lowStock,
-      };
-    });
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [nextProducts, nextStocks] = await Promise.all([fetchProducts(), fetchStocks()]);
+      setProducts(nextProducts);
+      setStocks(nextStocks);
+      setMessage({ type: "", text: "" });
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadData();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadData]);
+
+  const stockByMaterial = useMemo(() => {
+    return stocks.reduce((acc, stock) => {
+      acc[stock.materialNo] = (acc[stock.materialNo] ?? 0) + stock.quantity;
+      return acc;
+    }, {});
+  }, [stocks]);
+
+  const categoryStats = useMemo(() => {
+    const grouped = products.reduce((acc, product) => {
+      const name = product.category || "Genel";
+      if (!acc[name]) {
+        acc[name] = { id: name, name, productCount: 0, totalStock: 0, sapOnlyCount: 0, emptyCount: 0 };
+      }
+      const totalStock = stockByMaterial[product.code] ?? 0;
+      acc[name].productCount += 1;
+      acc[name].totalStock += totalStock;
+      if (product.isSapOnly) acc[name].sapOnlyCount += 1;
+      if (totalStock <= 0) acc[name].emptyCount += 1;
+      return acc;
+    }, {});
+
+    const term = query.trim().toLowerCase();
+    return Object.values(grouped)
+      .filter((category) => !term || category.name.toLowerCase().includes(term))
+      .sort((a, b) => a.name.localeCompare(b.name, "tr"));
+  }, [products, query, stockByMaterial]);
+
+  const columns = [
+    {
+      key: "name",
+      header: "Kategori",
+      render: (category) => (
+        <div className="entity-name">
+          <strong>{category.name}</strong>
+          <span>{category.productCount} ürün</span>
+        </div>
+      ),
+    },
+    { key: "productCount", header: "Ürün", className: "numeric-cell" },
+    { key: "totalStock", header: "Toplam Stok", className: "numeric-cell" },
+    { key: "sapOnlyCount", header: "SAP Katalog", className: "numeric-cell" },
+    {
+      key: "status",
+      header: "Durum",
+      render: (category) => (
+        <StatusBadge tone={category.emptyCount > 0 ? "warning" : "success"}>
+          {category.emptyCount > 0 ? `${category.emptyCount} stoksuz` : "Stoklu"}
+        </StatusBadge>
+      ),
+    },
+  ];
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
-          <span className="eyebrow">Kategori özeti</span>
+          <span className="eyebrow">Ürünlerden türetilen kategori analizi</span>
           <h1>Kategoriler</h1>
-          <p>Kategorilere göre ürün sayısını, toplam stoğu ve kritik ürün yoğunluğunu görün.</p>
+          <p>API’de ayrı kategori controller’ı olmadığı için kategori görünümü ürün katalog verisinden hesaplanır.</p>
         </div>
       </div>
 
-      {categoryStats.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            {icons.empty}
-            <div>
-              <strong>Kategori bulunamadı</strong>
-              <p>Ürün eklerken kullanılacak kategori listesi henüz oluşturulmamış.</p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="categories-grid">
-          {categoryStats.map((category) => (
-            <article key={category.id} className="category-card">
-              <div className="category-header">
-                <div>
-                  <span className="category-code">Kategori {category.id}</span>
-                  <h2>{category.name}</h2>
-                </div>
-                <span className={`badge ${category.lowStock > 0 ? "danger" : "success"}`}>
-                  {category.lowStock > 0 ? `${category.lowStock} kritik` : "Sağlıklı"}
-                </span>
-              </div>
+      <Toast message={message} />
 
-              <div className="category-stats">
-                <div className="category-stat">
-                  <span>{category.productCount}</span>
-                  <p>Ürün</p>
-                </div>
-                <div className="category-stat">
-                  <span>{category.totalStock}</span>
-                  <p>Toplam Stok</p>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+      <FilterBar>
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Kategori ara" />
+        <Button onClick={loadData}>Yenile</Button>
+      </FilterBar>
+
+      <div className="card">
+        <DataTable
+          columns={columns}
+          rows={categoryStats}
+          getRowKey={(category) => category.id}
+          loading={loading}
+          empty={<EmptyState title="Kategori bulunamadı" text="Ürünlerde kategori alanı bulunmuyor." />}
+        />
+      </div>
     </div>
   );
 }
