@@ -8,9 +8,12 @@ const menuItems = [
   { path: "/products", label: "Ürünler", icon: "products", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
   { path: "/warehouses", label: "Depolar", icon: "warehouses", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
   { path: "/stocks", label: "Stoklar", icon: "stocks" },
+  { path: "/operations", label: "Operasyon", icon: "movements", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
+  { path: "/alerts", label: "Uyarılar", icon: "categories", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
   { path: "/categories", label: "Kategoriler", icon: "categories", roles: ["SuperAdmin", "Admin", "WarehouseManager"] },
   { path: "/movements", label: "Stok Hareketleri", icon: "movements" },
   { path: "/reports", label: "Raporlar", icon: "reports", roles: ["SuperAdmin", "Admin"] },
+  { path: "/integrations", label: "Entegrasyonlar", icon: "settings", roles: ["SuperAdmin", "Admin"] },
   { path: "/settings", label: "Ayarlar", icon: "settings", roles: ["SuperAdmin", "Admin"] },
   { path: "/admin/users", label: "Kullanıcı Yönetimi", icon: "users", roles: ["SuperAdmin"] },
 ];

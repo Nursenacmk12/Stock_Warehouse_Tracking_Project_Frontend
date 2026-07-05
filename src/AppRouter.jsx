@@ -9,11 +9,14 @@ import Categories from "./pages/Categories.jsx";
 import Movements from "./pages/Movements.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
-import Register from "./pages/Register.jsx";
+import Alerts from "./pages/Alerts.jsx";
+import Operations from "./pages/Operations.jsx";
+import Integrations from "./pages/Integrations.jsx";
 import Layout from "./components/Layout.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import { useAuth } from "./context/useAuth.js";
+import { LoadingState } from "./components/ui/CommonUI.jsx";
 import "./App.css";
 
 const Users = lazy(() => import("./pages/admin/Users.jsx"));
@@ -37,10 +40,10 @@ export function AppRoutes() {
   return (
     <ThemeProvider>
     <AuthProvider>
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingState text="Sayfa yükleniyor..." />}>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/register" element={<Navigate to="/admin/users/new" replace />} />
         <Route
           path="/dashboard"
           element={
@@ -82,6 +85,22 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="/alerts"
+          element={
+            <PrivateRoute allowedRoles={["SuperAdmin", "Admin", "WarehouseManager"]}>
+              <Alerts />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/operations"
+          element={
+            <PrivateRoute allowedRoles={["SuperAdmin", "Admin", "WarehouseManager"]}>
+              <Operations />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/reports"
           element={
             <PrivateRoute allowedRoles={["SuperAdmin", "Admin"]}>
@@ -94,6 +113,14 @@ export function AppRoutes() {
           element={
             <PrivateRoute>
               <Movements />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/integrations"
+          element={
+            <PrivateRoute allowedRoles={["SuperAdmin", "Admin"]}>
+              <Integrations />
             </PrivateRoute>
           }
         />

@@ -35,12 +35,34 @@ param(
 $ErrorActionPreference = "Stop"
 $FrontendRoot = $PSScriptRoot
 
-# API kökü: parametre > ortam değişkeni > yaygın varsayılan (gerekirse düzenleyin)
-if (-not $ApiPath) {
-  $ApiPath = $env:STOCK_API_PATH
+# API kökü: parametre > ortam değişkeni > otomatik adaylar
+function Resolve-ApiPath([string] $Preferred) {
+  $candidates = @(
+    $Preferred,
+    $env:STOCK_API_PATH,
+    (Join-Path (Split-Path $FrontendRoot -Parent) "Stock_Warehouse_Tracking_Project_API\Stock_Warehouse_Tracking_Project_API"),
+    "C:\Users\ahmet\OneDrive\Belgeler\GitHub\Stock_Warehouse_Tracking_Project_API\Stock_Warehouse_Tracking_Project_API",
+    "C:\Users\ahmet\source\repos\Stock_Warehouse_Tracking_Project_API\Stock_Warehouse_Tracking_Project_API"
+  ) | Where-Object { $_ -and (Test-Path $_) }
+
+  foreach ($candidate in $candidates) {
+    $resolved = Resolve-Path -LiteralPath $candidate -ErrorAction SilentlyContinue
+    if ($resolved -and (Test-Path (Join-Path $resolved "Stock_Warehouse_Tracking_Project_API.csproj"))) {
+      return $resolved.Path
+    }
+    if ($resolved -and (Get-ChildItem -Path $resolved -Filter "*.csproj" -File -ErrorAction SilentlyContinue)) {
+      return $resolved.Path
+    }
+  }
+
+  return $null
 }
+
 if (-not $ApiPath) {
-  $ApiPath = "C:\Users\ahmet\source\repos\Stock_Warehouse_Tracking_Project_API\Stock_Warehouse_Tracking_Project_API"
+  $ApiPath = Resolve-ApiPath $null
+}
+else {
+  $ApiPath = Resolve-ApiPath $ApiPath
 }
 
 function Test-Command([string] $Name) {
@@ -71,11 +93,12 @@ if ($Install -or -not (Test-Path $nodeModules)) {
 }
 
 if (-not $FrontendOnly) {
-  if (-not (Test-Path $ApiPath)) {
+  if (-not $ApiPath) {
     Write-Error @"
-API klasörü bulunamadı: $ApiPath
+API klasörü otomatik bulunamadı.
 Çözüm: -ApiPath ile doğru yolu verin veya ortam değişkeni ayarlayın:
-  `$env:STOCK_API_PATH = 'C:\...\Stock_Warehouse_Tracking_Project_API\Stock_Warehouse_Tracking_Project_API'
+  `$env:STOCK_API_PATH = 'C:\Users\ahmet\OneDrive\Belgeler\GitHub\Stock_Warehouse_Tracking_Project_API\Stock_Warehouse_Tracking_Project_API'
+  .\run-dev.ps1 -ApiPath `$env:STOCK_API_PATH
 "@
   }
 
@@ -96,7 +119,34 @@ dotnet run --launch-profile http
     "-NoExit", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $apiCmd
   ) | Out-Null
 
-  Write-Host "API penceresi açıldı." -ForegroundColor Green
+  Write-Host "API penceresi açıldı; hazır olması bekleniyor..." -ForegroundColor Cyan
+
+  $apiReady = $false
+  $deadline = (Get-Date).AddSeconds(90)
+  while ((Get-Date) -lt $deadline) {
+    try {
+      $health = Invoke-WebRequest -Uri "http://localhost:5087/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+      if ($health.StatusCode -eq 200) {
+        $apiReady = $true
+        break
+      }
+    }
+    catch {
+      Start-Sleep -Seconds 2
+    }
+  }
+
+  if ($apiReady) {
+    Write-Host "API hazır: http://localhost:5087" -ForegroundColor Green
+  }
+  else {
+    Write-Warning @"
+API 90 saniye içinde yanıt vermedi (http://localhost:5087).
+Frontend yine de açılacak; girişte 'http proxy error / ECONNREFUSED' görürseniz API penceresini kontrol edin veya:
+  cd '$ApiPath'
+  dotnet run --launch-profile http
+"@
+  }
 }
 
 $feCmd = @"

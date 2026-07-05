@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, DataTable, EmptyState, KpiCard, StatusBadge, Toast } from "../components/ui/CommonUI.jsx";
-import { fetchMovements } from "../services/movementApi.js";
-import { fetchProducts } from "../services/productApi.js";
-import { fetchHealth } from "../services/systemApi.js";
-import { fetchStocks } from "../services/stockApi.js";
-import { fetchWarehouses } from "../services/warehouseApi.js";
+import { useDashboardSummary } from "../hooks/useQueries.js";
+import { useStockHub } from "../hooks/useStockHub.js";
+import { queryKeys } from "../lib/queryClient.js";
 import "./Dashboard.css";
 
 function formatDate(value) {
@@ -14,106 +13,34 @@ function formatDate(value) {
 }
 
 function Dashboard() {
-  const [products, setProducts] = useState([]);
-  const [stocks, setStocks] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
-  const [movements, setMovements] = useState([]);
-  const [sapStatus, setSapStatus] = useState("checking");
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: summary, isLoading, isError, error, refetch } = useDashboardSummary();
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setSapStatus("checking");
-    try {
-      const [nextProducts, nextStocks, nextWarehouses, nextMovements, sapHealth] = await Promise.all([
-        fetchProducts(),
-        fetchStocks(),
-        fetchWarehouses(),
-        fetchMovements({ page: 1, pageSize: 8 }),
-        fetchHealth("/health/sap"),
-      ]);
-      setProducts(nextProducts);
-      setStocks(nextStocks);
-      setWarehouses(nextWarehouses);
-      setMovements(nextMovements.items);
-      setSapStatus(sapHealth.ok ? "healthy" : "unhealthy");
-      setMessage({ type: "", text: "" });
-    } catch (error) {
-      setMessage({ type: "error", text: error.message });
-      setSapStatus("unhealthy");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      loadData();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [loadData]);
+    if (isError) {
+      setMessage({ type: "error", text: error?.message ?? "Dashboard yüklenemedi." });
+    }
+  }, [isError, error]);
 
-  const productByCode = useMemo(() => {
-    return products.reduce((acc, product) => {
-      acc[product.code] = product;
-      return acc;
-    }, {});
-  }, [products]);
+  const loadData = useCallback(() => {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+  }, [refetch, queryClient]);
 
-  const stockByMaterial = useMemo(() => {
-    return stocks.reduce((acc, stock) => {
-      acc[stock.materialNo] = (acc[stock.materialNo] ?? 0) + stock.quantity;
-      return acc;
-    }, {});
-  }, [stocks]);
+  useStockHub(() => {
+    loadData();
+  });
 
-  const warehouseTotals = useMemo(() => {
-    const grouped = stocks.reduce((acc, stock) => {
-      acc[stock.warehouseId] = (acc[stock.warehouseId] ?? 0) + stock.quantity;
-      return acc;
-    }, {});
-
-    return Object.entries(grouped)
-      .map(([code, quantity]) => ({
-        code,
-        name: warehouses.find((warehouse) => warehouse.code === code)?.name ?? code,
-        quantity,
-      }))
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 6);
-  }, [stocks, warehouses]);
-
-  const categoryTotals = useMemo(() => {
-    const grouped = products.reduce((acc, product) => {
-      const category = product.category || "Genel";
-      acc[category] = (acc[category] ?? 0) + (stockByMaterial[product.code] ?? 0);
-      return acc;
-    }, {});
-
-    return Object.entries(grouped)
-      .map(([name, quantity]) => ({ name, quantity }))
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 5);
-  }, [products, stockByMaterial]);
-
-  const summary = useMemo(() => {
-    const totalStock = stocks.reduce((sum, stock) => sum + stock.quantity, 0);
-    const emptyMaterials = stocks.filter((stock) => stock.quantity <= 0).length;
-    const sapOnly = products.filter((product) => product.isSapOnly).length;
-
-    return {
-      totalStock,
-      emptyMaterials,
-      sapOnly,
-      products: products.length,
-      warehouses: warehouses.length,
-      movements: movements.length,
-    };
-  }, [movements.length, products, stocks, warehouses.length]);
+  const sapStatus = summary?.sapStatus ?? "checking";
+  const warehouseTotals = summary?.warehouseStockDistribution ?? [];
+  const categoryTotals = summary?.categoryStockDistribution ?? [];
+  const movements = summary?.recentMovements ?? [];
 
   const maxWarehouseQuantity = Math.max(1, ...warehouseTotals.map((item) => item.quantity));
   const maxCategoryQuantity = Math.max(1, ...categoryTotals.map((item) => item.quantity));
+
+  const productByCode = useMemo(() => ({}), []);
 
   const movementColumns = [
     { key: "date", header: "Tarih", render: (row) => formatDate(row.date) },
@@ -137,24 +64,34 @@ function Dashboard() {
         <Button onClick={loadData}>Yenile</Button>
       </div>
 
-      <Toast message={message} />
+      <Toast message={message} onDismiss={() => setMessage({ type: "", text: "" })} />
 
       <section className="sap-status-bar" aria-label="SAP bağlantı durumu">
         <div className={`sap-indicator ${sapStatus}`}>
           <span className="sap-dot" />
           <strong>SAP Bağlantısı</strong>
           <span>
-            {sapStatus === "checking" ? "Kontrol ediliyor..." : sapStatus === "healthy" ? "Aktif" : "Bağlantı kesik"}
+            {sapStatus === "checking" || isLoading
+              ? "Kontrol ediliyor..."
+              : sapStatus === "healthy"
+                ? "Aktif"
+                : "Bağlantı kesik"}
           </span>
         </div>
       </section>
 
       <section className="stats-grid" aria-label="Operasyon özeti">
-        <KpiCard label="Toplam Ürün" value={summary.products} tone="blue" helper={`${summary.sapOnly} SAP katalog`} />
-        <KpiCard label="Toplam Stok" value={summary.totalStock} tone="green" />
-        <KpiCard label="Depo" value={summary.warehouses} tone="amber" />
-        <KpiCard label="Stoksuz Satır" value={summary.emptyMaterials} tone="red" />
-        <KpiCard label="Son Hareket" value={summary.movements} tone="teal" />
+        <KpiCard
+          label="Toplam Ürün"
+          value={summary?.productCount ?? "—"}
+          tone="blue"
+          helper={`${summary?.sapOnlyProductCount ?? 0} SAP katalog`}
+        />
+        <KpiCard label="Toplam Stok" value={summary?.totalStockQuantity ?? "—"} tone="green" />
+        <KpiCard label="Depo" value={summary?.warehouseCount ?? "—"} tone="amber" />
+        <KpiCard label="Stoksuz Satır" value={summary?.emptyStockLines ?? "—"} tone="red" />
+        <KpiCard label="Kritik Stok" value={summary?.lowStockCount ?? "—"} tone="red" />
+        <KpiCard label="Son Hareket" value={movements.length} tone="teal" />
       </section>
 
       <section className="dashboard-grid">
@@ -215,14 +152,14 @@ function Dashboard() {
         <div className="card-header">
           <div>
             <h2>Son Stok Hareketleri</h2>
-            <p>API’den gelen en güncel operasyon kayıtları</p>
+            <p>API'den gelen en güncel operasyon kayıtları</p>
           </div>
         </div>
         <DataTable
           columns={movementColumns}
           rows={movements}
           getRowKey={(row) => row.id}
-          loading={loading}
+          loading={isLoading}
           empty={<EmptyState title="Hareket yok" text="Henüz stok hareketi kaydı bulunmuyor." />}
         />
       </section>

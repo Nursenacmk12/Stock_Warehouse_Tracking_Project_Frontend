@@ -1,26 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button, StatusBadge } from "../components/ui/CommonUI.jsx";
 import { getApiBaseUrl } from "../services/apiClient.js";
-import { fetchHealth } from "../services/systemApi.js";
+import { fetchHealthStatus } from "../services/dashboardApi.js";
 import "./Settings.css";
 
 function Settings() {
-  const [apiHealth, setApiHealth] = useState("checking");
-  const [sapHealth, setSapHealth] = useState("checking");
+  const [health, setHealth] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const checkHealth = useCallback(async () => {
-    setApiHealth("checking");
-    setSapHealth("checking");
-    const [api, sap] = await Promise.all([fetchHealth("/health"), fetchHealth("/health/sap")]);
-    setApiHealth(api.ok ? "healthy" : "unhealthy");
-    setSapHealth(sap.ok ? "healthy" : "unhealthy");
+    setLoading(true);
+    try {
+      const status = await fetchHealthStatus();
+      setHealth(status);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      checkHealth();
-    }, 0);
-    return () => window.clearTimeout(timer);
+    checkHealth();
   }, [checkHealth]);
 
   const baseUrl = getApiBaseUrl() || "Vite proxy: /api -> http://localhost:5087";
@@ -31,7 +30,7 @@ function Settings() {
         <div>
           <span className="eyebrow">Sistem</span>
           <h1>Ayarlar</h1>
-          <p>Frontend’in API ve SAP bağlantı durumunu, rol tabanlı modülleri ve çalışma ortamını izleyin.</p>
+          <p>Frontend'in API, veritabanı ve SAP bağlantı durumunu izleyin.</p>
         </div>
         <Button onClick={checkHealth}>Bağlantıları Kontrol Et</Button>
       </div>
@@ -47,22 +46,32 @@ function Settings() {
       <div className="settings-grid">
         <article className="settings-card">
           <div className="settings-card-head">
-            <StatusBadge tone={apiHealth === "healthy" ? "success" : apiHealth === "checking" ? "warning" : "danger"}>
-              {apiHealth === "healthy" ? "Aktif" : apiHealth === "checking" ? "Kontrol ediliyor" : "Hata"}
+            <StatusBadge tone={health?.api === "healthy" ? "success" : loading ? "warning" : "danger"}>
+              {loading ? "Kontrol ediliyor" : health?.api === "healthy" ? "Aktif" : "Hata"}
             </StatusBadge>
             <h2>API Sağlığı</h2>
           </div>
-          <p className="settings-card-desc">`/health` endpoint’i üzerinden ASP.NET Core API erişimi doğrulanır.</p>
+          <p className="settings-card-desc">Composite health endpoint ile API erişimi doğrulanır.</p>
         </article>
 
         <article className="settings-card">
           <div className="settings-card-head">
-            <StatusBadge tone={sapHealth === "healthy" ? "success" : sapHealth === "checking" ? "warning" : "danger"}>
-              {sapHealth === "healthy" ? "Aktif" : sapHealth === "checking" ? "Kontrol ediliyor" : "Hata"}
+            <StatusBadge tone={health?.database === "healthy" ? "success" : loading ? "warning" : "danger"}>
+              {loading ? "Kontrol ediliyor" : health?.database === "healthy" ? "Aktif" : "Hata"}
+            </StatusBadge>
+            <h2>Veritabanı</h2>
+          </div>
+          <p className="settings-card-desc">SQL Server bağlantı durumu.</p>
+        </article>
+
+        <article className="settings-card">
+          <div className="settings-card-head">
+            <StatusBadge tone={health?.sap === "healthy" ? "success" : loading ? "warning" : "danger"}>
+              {loading ? "Kontrol ediliyor" : health?.sap === "healthy" ? "Aktif" : "Hata"}
             </StatusBadge>
             <h2>SAP Entegrasyonu</h2>
           </div>
-          <p className="settings-card-desc">`/health/sap` endpoint’i ile SAP sağlayıcısının hazır olduğu kontrol edilir.</p>
+          <p className="settings-card-desc">SAP provider health check sonucu.</p>
         </article>
 
         <article className="settings-card">

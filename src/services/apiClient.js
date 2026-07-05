@@ -107,7 +107,8 @@ export async function request(path, init = {}) {
 
   const { res, json, text } = out;
   if (!res.ok) {
-    if (res.status === 401 && unauthorizedHandler) {
+    const isAuthLogin = path === "/api/auth/login" || path.endsWith("/api/auth/login");
+    if (res.status === 401 && unauthorizedHandler && !isAuthLogin) {
       unauthorizedHandler();
     }
 

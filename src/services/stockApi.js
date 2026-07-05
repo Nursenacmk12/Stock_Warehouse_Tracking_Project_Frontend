@@ -48,6 +48,10 @@ export async function stockOut(payload) {
   );
 }
 
+export async function fetchStockDetail(matnr, whId) {
+  return normalizeStock(await request(`/api/stocks/${encodeURIComponent(matnr)}/${encodeURIComponent(whId)}`));
+}
+
 export async function transferStock(payload) {
   return normalizeStock(
     await request("/api/stocks/transfer", {

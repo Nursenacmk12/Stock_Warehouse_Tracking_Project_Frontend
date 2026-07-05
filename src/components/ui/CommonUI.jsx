@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import "./ui.css";
 
 export function Button({ children, variant = "secondary", className = "", ...props }) {
@@ -142,7 +143,13 @@ export function LoadingState({ text = "Yükleniyor..." }) {
   );
 }
 
-export function Toast({ message }) {
+export function Toast({ message, onDismiss, autoHideMs = 4000 }) {
+  useEffect(() => {
+    if (!message?.text || !onDismiss) return undefined;
+    const timer = window.setTimeout(onDismiss, autoHideMs);
+    return () => window.clearTimeout(timer);
+  }, [message?.text, onDismiss, autoHideMs]);
+
   if (!message?.text) return null;
   return (
     <div className={`message ${message.type || "success"}`} role="status">

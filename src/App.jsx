@@ -115,6 +115,12 @@ function App() {
 
           <div className="form-footer">
             <p>Hesap oluşturmak için sistem yöneticinize başvurun.</p>
+            {import.meta.env.DEV && (
+              <p className="muted-text" style={{ marginTop: 12 }}>
+                Geliştirme ortamı: API <code>http://localhost:5087</code> üzerinde çalışmalıdır.
+                Varsayılan SuperAdmin: <code>ahmet@superadmin.com</code> / <code>Admin123!</code>
+              </p>
+            )}
           </div>
         </div>
       </section>
