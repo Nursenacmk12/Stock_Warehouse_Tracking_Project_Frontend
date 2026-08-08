@@ -1,6 +1,42 @@
 import { useEffect } from "react";
 import "./ui.css";
 
+const emptyStateIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M4 7h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
+    <path d="M9 7V5a3 3 0 016 0v2" />
+    <path d="M9 13h6" />
+  </svg>
+);
+
+const kpiIcons = {
+  blue: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </svg>
+  ),
+  green: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+      <path d="M3 8v8l9 5 9-5V8" />
+      <path d="M12 13v8" />
+    </svg>
+  ),
+  amber: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M3 21V8l9-5 9 5v13" />
+      <path d="M9 21v-7h6v7" />
+      <path d="M7 10h10" />
+    </svg>
+  ),
+  red: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <path d="M12 9v4M12 17h.01" />
+    </svg>
+  ),
+};
+
 export function Button({ children, variant = "secondary", className = "", ...props }) {
   return (
     <button className={`btn btn-${variant} ${className}`.trim()} type="button" {...props}>
@@ -116,20 +152,27 @@ export function Pagination({ page, totalPages, totalCount, onPageChange }) {
   );
 }
 
-export function FilterBar({ children }) {
-  return <div className="filters operation-filters">{children}</div>;
+export function FilterBar({ children, secondary, actions, className = "" }) {
+  return (
+    <div className={`filters operation-filters list-filters ${className}`.trim()}>
+      <div className="filter-primary">{children}</div>
+      {secondary ? <div className="filter-secondary">{secondary}</div> : null}
+      {actions ? <div className="filter-actions">{actions}</div> : null}
+    </div>
+  );
 }
 
 export function StatusBadge({ tone = "neutral", children }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }
 
-export function EmptyState({ title, text, action }) {
+export function EmptyState({ title, text, action, icon }) {
   return (
     <div className="empty-state">
+      <div className="empty-state-icon">{icon ?? emptyStateIcon}</div>
       <strong>{title}</strong>
       {text && <p>{text}</p>}
-      {action}
+      {action ? <div className="empty-state-action">{action}</div> : null}
     </div>
   );
 }
@@ -158,10 +201,10 @@ export function Toast({ message, onDismiss, autoHideMs = 4000 }) {
   );
 }
 
-export function KpiCard({ label, value, tone = "blue", helper }) {
+export function KpiCard({ label, value, tone = "blue", helper, icon }) {
   return (
     <article className="kpi-card">
-      <div className={`kpi-icon ${tone}`} />
+      <div className={`kpi-icon ${tone}`}>{icon ?? kpiIcons[tone] ?? kpiIcons.blue}</div>
       <div>
         <span className="kpi-value">{value}</span>
         <span className="kpi-label">{label}</span>

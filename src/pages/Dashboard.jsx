@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, DataTable, EmptyState, KpiCard, StatusBadge, Toast } from "../components/ui/CommonUI.jsx";
 import { useDashboardSummary } from "../hooks/useQueries.js";
@@ -11,6 +12,26 @@ function formatDate(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("tr-TR");
 }
+
+const warehouseEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M3 21V8l9-5 9 5v13" />
+    <path d="M9 21v-7h6v7" />
+    <path d="M7 10h10" />
+  </svg>
+);
+
+const categoryEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+  </svg>
+);
+
+const movementEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M8 7h12m0 0l-4-4m4 4l-4 4M9 17H7a2 2 0 01-2-2V9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2h-2" />
+  </svg>
+);
 
 function Dashboard() {
   const queryClient = useQueryClient();
@@ -87,11 +108,19 @@ function Dashboard() {
           tone="blue"
           helper={`${summary?.sapOnlyProductCount ?? 0} SAP katalog`}
         />
-        <KpiCard label="Toplam Stok" value={summary?.totalStockQuantity ?? "—"} tone="green" />
+        <KpiCard
+          label="Toplam Stok"
+          value={summary?.totalStockQuantity ?? "—"}
+          tone="green"
+          helper={`${summary?.emptyStockLines ?? 0} stoksuz satır`}
+        />
         <KpiCard label="Depo" value={summary?.warehouseCount ?? "—"} tone="amber" />
-        <KpiCard label="Stoksuz Satır" value={summary?.emptyStockLines ?? "—"} tone="red" />
-        <KpiCard label="Kritik Stok" value={summary?.lowStockCount ?? "—"} tone="red" />
-        <KpiCard label="Son Hareket" value={movements.length} tone="teal" />
+        <KpiCard
+          label="Kritik Stok"
+          value={summary?.lowStockCount ?? "—"}
+          tone="red"
+          helper={movements.length ? `${movements.length} son hareket` : undefined}
+        />
       </section>
 
       <section className="dashboard-grid">
@@ -104,7 +133,21 @@ function Dashboard() {
           </div>
           <div className="bar-list">
             {warehouseTotals.length === 0 ? (
-              <EmptyState title="Depo stoku yok" text="SAP stok servisi depo dağılımı döndürmedi." />
+              <EmptyState
+                icon={warehouseEmptyIcon}
+                title="Depo stoku yok"
+                text="Henüz depo dağılımı yok. Depoları kontrol edin veya SAP senkronunu çalıştırın."
+                action={
+                  <>
+                    <Link to="/warehouses" className="btn btn-secondary">
+                      Depolar
+                    </Link>
+                    <Link to="/integrations" className="btn btn-secondary">
+                      Entegrasyonlar
+                    </Link>
+                  </>
+                }
+              />
             ) : (
               warehouseTotals.map((item) => (
                 <div className="bar-row" key={item.code}>
@@ -130,7 +173,16 @@ function Dashboard() {
           </div>
           <div className="bar-list">
             {categoryTotals.length === 0 ? (
-              <EmptyState title="Kategori verisi yok" text="Ürün kataloğunda kategori alanı bulunmuyor." />
+              <EmptyState
+                icon={categoryEmptyIcon}
+                title="Kategori verisi yok"
+                text="Kategori dağılımı için ürün kataloğunu doldurun veya senkronlayın."
+                action={
+                  <Link to="/products" className="btn btn-secondary">
+                    Ürünlere git
+                  </Link>
+                }
+              />
             ) : (
               categoryTotals.map((item) => (
                 <div className="bar-row" key={item.name}>
@@ -160,7 +212,18 @@ function Dashboard() {
           rows={movements}
           getRowKey={(row) => row.id}
           loading={isLoading}
-          empty={<EmptyState title="Hareket yok" text="Henüz stok hareketi kaydı bulunmuyor." />}
+          empty={
+            <EmptyState
+              icon={movementEmptyIcon}
+              title="Hareket yok"
+              text="Henüz stok hareketi kaydı bulunmuyor. Operasyonlardan giriş/çıkış yapabilirsiniz."
+              action={
+                <Link to="/operations" className="btn btn-primary">
+                  Operasyona git
+                </Link>
+              }
+            />
+          }
         />
       </section>
     </div>

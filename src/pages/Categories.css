@@ -30,13 +30,13 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(13, 148, 136, 0.09), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 9%, transparent), transparent 70%);
   pointer-events: none;
   content: "";
 }
 
 .category-card:hover {
-  border-color: rgba(13, 148, 136, 0.28);
+  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
   box-shadow: var(--shadow-md);
   transform: translateY(-3px);
 }

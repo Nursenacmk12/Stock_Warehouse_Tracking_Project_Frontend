@@ -1,32 +1,81 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 
+const THEME_PREF_KEY = "stock_theme_pref";
 const THEME_KEY = "stock_theme";
 
-function getInitialTheme() {
+function resolveTheme(preference) {
+  if (preference === "light" || preference === "dark") return preference;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function getInitialPreference() {
   try {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === "dark" || saved === "light") return saved;
+    const savedPref = localStorage.getItem(THEME_PREF_KEY);
+    if (savedPref === "system" || savedPref === "light" || savedPref === "dark") return savedPref;
+    const legacy = localStorage.getItem(THEME_KEY);
+    if (legacy === "dark" || legacy === "light") return legacy;
   } catch {
     /* ignore */
   }
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "system";
 }
 
 const ThemeContext = createContext(null);
 
 function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(getInitialTheme);
+  const [preference, setPreferenceState] = useState(getInitialPreference);
+  const [theme, setTheme] = useState(() => resolveTheme(getInitialPreference()));
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+    const applied = resolveTheme(preference);
+    setTheme(applied);
+    document.documentElement.setAttribute("data-theme", applied);
+    try {
+      localStorage.setItem(THEME_PREF_KEY, preference);
+      localStorage.setItem(THEME_KEY, applied);
+    } catch {
+      /* ignore */
+    }
+  }, [preference]);
 
-  const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+  useEffect(() => {
+    if (preference !== "system") return undefined;
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq) return undefined;
+    const onChange = () => {
+      const applied = resolveTheme("system");
+      setTheme(applied);
+      document.documentElement.setAttribute("data-theme", applied);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [preference]);
+
+  const setPreference = useCallback((next) => {
+    if (next === "system" || next === "light" || next === "dark") {
+      setPreferenceState(next);
+    }
   }, []);
 
-  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
+  const cyclePreference = useCallback(() => {
+    setPreferenceState((prev) => {
+      if (prev === "system") return "light";
+      if (prev === "light") return "dark";
+      return "system";
+    });
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setPreferenceState((prev) => {
+      const current = resolveTheme(prev);
+      return current === "dark" ? "light" : "dark";
+    });
+  }, []);
+
+  const value = useMemo(
+    () => ({ theme, preference, setPreference, cyclePreference, toggleTheme }),
+    [theme, preference, setPreference, cyclePreference, toggleTheme]
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

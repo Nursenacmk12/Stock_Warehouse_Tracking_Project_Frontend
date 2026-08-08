@@ -8,6 +8,8 @@ import Stocks from "./pages/Stocks.jsx";
 import Categories from "./pages/Categories.jsx";
 import Movements from "./pages/Movements.jsx";
 import Reports from "./pages/Reports.jsx";
+import Analytics from "./pages/Analytics.jsx";
+import EventLogs from "./pages/EventLogs.jsx";
 import Settings from "./pages/Settings.jsx";
 import Alerts from "./pages/Alerts.jsx";
 import Operations from "./pages/Operations.jsx";
@@ -105,6 +107,22 @@ export function AppRoutes() {
           element={
             <PrivateRoute allowedRoles={["SuperAdmin", "Admin"]}>
               <Reports />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <PrivateRoute allowedRoles={["SuperAdmin", "Admin", "Manager"]}>
+              <Analytics />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/logs"
+          element={
+            <PrivateRoute allowedRoles={["SuperAdmin", "Admin"]}>
+              <EventLogs />
             </PrivateRoute>
           }
         />

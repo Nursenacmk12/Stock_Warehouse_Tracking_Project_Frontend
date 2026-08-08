@@ -1,14 +1,52 @@
-.operation-filters {
+.operation-filters,
+.list-filters {
   align-items: stretch;
-  padding: 16px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--primary) 5%, transparent), transparent 40%),
+    var(--surface);
   box-shadow: var(--shadow-card);
 }
 
+.list-filters {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.filter-primary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 420px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.filter-secondary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
 .operation-filters input,
-.operation-filters select {
+.operation-filters select,
+.list-filters input,
+.list-filters select {
   min-height: 42px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
@@ -17,8 +55,18 @@
   padding: 10px 12px;
 }
 
-.operation-filters input {
+.operation-filters input,
+.list-filters input {
   min-width: min(100%, 260px);
+}
+
+.operation-filters input:focus,
+.operation-filters select:focus,
+.list-filters input:focus,
+.list-filters select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+  outline: none;
 }
 
 .operation-actions {
@@ -26,6 +74,18 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.list-card-meta {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.list-card-meta strong {
+  color: var(--text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .entity-name {
@@ -139,6 +199,111 @@
   font-weight: 650;
 }
 
+.kpi-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 20px 18px;
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.kpi-card::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: linear-gradient(90deg, var(--primary), var(--primary-strong));
+  opacity: 0.85;
+  content: "";
+}
+
+.kpi-card.critical::before {
+  background: linear-gradient(90deg, #fb7185, var(--danger));
+}
+
+.kpi-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.kpi-card.critical {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  color: var(--primary-strong);
+}
+
+.kpi-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.kpi-icon.blue {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.kpi-icon.red {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.kpi-icon.green {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.kpi-icon.amber {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.kpi-value,
+.kpi-label {
+  display: block;
+}
+
+.kpi-value {
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.kpi-label {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chart-card .empty-state {
+  min-height: 160px;
+}
+
 .badge.in,
 .badge.success-soft {
   background: var(--green-soft);
@@ -175,8 +340,26 @@
 @media (max-width: 768px) {
   .operation-filters input,
   .operation-filters select,
-  .operation-actions .btn {
+  .list-filters input,
+  .list-filters select,
+  .operation-actions .btn,
+  .filter-actions .btn {
     width: 100%;
+  }
+
+  .list-filters,
+  .filter-primary,
+  .filter-secondary,
+  .filter-actions {
+    width: 100%;
+  }
+
+  .filter-actions {
+    margin-left: 0;
+  }
+
+  .filter-actions .btn {
+    flex: 1;
   }
 
   .pagination {
