@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button, DataTable, EmptyState, FilterBar, StatusBadge, Toast } from "../components/ui/CommonUI.jsx";
 import { fetchProducts } from "../services/productApi.js";
 import { fetchStocks } from "../services/stockApi.js";
 import "./Categories.css";
+
+const categoryEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+  </svg>
+);
 
 function Categories() {
   const [products, setProducts] = useState([]);
@@ -96,18 +103,43 @@ function Categories() {
 
       <Toast message={message} />
 
-      <FilterBar>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Kategori ara" />
-        <Button onClick={loadData}>Yenile</Button>
+      <FilterBar actions={<Button onClick={loadData}>Yenile</Button>}>
+        <input
+          className="filter-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Kategori ara"
+          aria-label="Kategori ara"
+        />
       </FilterBar>
 
       <div className="card">
+        <div className="card-header">
+          <div>
+            <h2>Kategori özeti</h2>
+            <p className="list-card-meta">
+              <strong>{categoryStats.length}</strong> kategori gösteriliyor
+            </p>
+          </div>
+        </div>
         <DataTable
           columns={columns}
           rows={categoryStats}
           getRowKey={(category) => category.id}
           loading={loading}
-          empty={<EmptyState title="Kategori bulunamadı" text="Ürünlerde kategori alanı bulunmuyor." />}
+          empty={
+            <EmptyState
+              icon={categoryEmptyIcon}
+              title="Kategori bulunamadı"
+              text="Ürünlerde kategori alanı bulunmuyor."
+              action={
+                <Link to="/products" className="btn btn-secondary">
+                  Ürünlere git
+                </Link>
+              }
+            />
+          }
         />
       </div>
     </div>

@@ -34,6 +34,11 @@
   --radius-lg: 14px;
   --sidebar-width: 264px;
   --sidebar-collapsed: 60px;
+  --font-sans:
+    "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --motion-fast: 180ms;
+  --ease-ui: ease;
 }
 
 [data-theme="dark"] {
@@ -83,8 +88,7 @@ html {
 
 body {
   min-width: 320px;
-  font-family:
-    "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-optical-sizing: auto;
   background: var(--bg);
   color: var(--text);
@@ -124,13 +128,13 @@ svg {
   max-width: 1400px;
   margin: 0 auto;
   padding: 32px 28px 40px;
-  animation: pageEnter 0.45s ease both;
+  animation: pageEnter var(--motion-fast) var(--ease-ui) both;
 }
 
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
 
   to {
@@ -153,7 +157,7 @@ svg {
   font-size: 28px;
   font-weight: 800;
   line-height: 1.12;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .page-header p {
@@ -166,9 +170,9 @@ svg {
   align-items: center;
   gap: 6px;
   color: var(--primary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 750;
-  letter-spacing: 0;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -255,9 +259,9 @@ svg {
   background: var(--surface);
   color: var(--text);
   transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    background 0.18s ease;
+    border-color var(--motion-fast) var(--ease-ui),
+    box-shadow var(--motion-fast) var(--ease-ui),
+    background var(--motion-fast) var(--ease-ui);
 }
 
 .filters select,
@@ -332,7 +336,7 @@ svg {
 }
 
 .data-table tbody tr {
-  transition: background 0.16s ease;
+  transition: background var(--motion-fast) var(--ease-ui);
 }
 
 .data-table tbody tr:nth-child(even) {
@@ -359,9 +363,19 @@ svg {
   background: var(--danger-soft) !important;
 }
 
+/* Central numeric / KPI mono treatment */
+.num,
 .numeric-cell {
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.numeric-cell {
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .text-danger {
@@ -420,10 +434,10 @@ svg {
   text-decoration: none;
   cursor: pointer;
   transition:
-    transform 0.16s ease,
-    border-color 0.16s ease,
-    background 0.16s ease,
-    box-shadow 0.16s ease;
+    transform var(--motion-fast) var(--ease-ui),
+    border-color var(--motion-fast) var(--ease-ui),
+    background var(--motion-fast) var(--ease-ui),
+    box-shadow var(--motion-fast) var(--ease-ui);
 }
 
 .btn:hover {
@@ -464,6 +478,12 @@ svg {
   color: #ffffff;
 }
 
+.btn-sm {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
 .btn-icon {
   width: 18px;
   height: 18px;
@@ -482,10 +502,10 @@ svg {
   color: var(--muted);
   cursor: pointer;
   transition:
-    transform 0.16s ease,
-    border-color 0.16s ease,
-    color 0.16s ease,
-    background 0.16s ease;
+    transform var(--motion-fast) var(--ease-ui),
+    border-color var(--motion-fast) var(--ease-ui),
+    color var(--motion-fast) var(--ease-ui),
+    background var(--motion-fast) var(--ease-ui);
 }
 
 .btn-icon-only svg {
@@ -682,11 +702,15 @@ a.btn {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-md);
-  animation: modalIn 0.2s ease;
+  animation: modalIn var(--motion-fast) var(--ease-ui);
 }
 
 .modal-sm {
   max-width: 380px;
+}
+
+.modal-lg {
+  max-width: 640px;
 }
 
 @keyframes modalIn {
@@ -789,6 +813,14 @@ a.btn {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
   font-weight: 850;
+}
+
+.brand-mark-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .auth-highlights {
@@ -933,5 +965,28 @@ a.btn {
 
   .auth-form-panel {
     padding: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .page,
+  .kpi-card {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .btn:hover,
+  .btn-icon-only:hover,
+  .kpi-card:hover {
+    transform: none;
   }
 }

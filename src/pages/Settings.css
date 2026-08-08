@@ -1,7 +1,7 @@
 .settings-intro {
   margin-bottom: 22px;
   border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--primary-soft) 80%, white), var(--surface));
+  background: linear-gradient(120deg, color-mix(in srgb, var(--primary-soft) 80%, var(--surface)), var(--surface));
 }
 
 .settings-intro-inner {
@@ -73,7 +73,7 @@
   border-radius: 14px;
   background: var(--surface-muted);
   color: var(--primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface) 50%, transparent);
 }
 
 .settings-card-icon svg {

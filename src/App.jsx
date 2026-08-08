@@ -52,12 +52,12 @@ function App() {
 
   return (
     <div className="auth-page">
-      <section className="auth-card" aria-label="Stok takip sistemi giriş formu">
+      <section className="auth-card" aria-label="StockGuard giriş formu">
         <div className="auth-brand-panel">
-          <div className="brand-mark">ST</div>
+          <img className="brand-mark brand-mark-logo" src="/stockguard-icon.png" alt="" />
           <div>
             <p className="eyebrow">Depo ve stok yönetimi</p>
-            <h1>Stok Takip Sistemi</h1>
+            <h1>StockGuard</h1>
             <p className="auth-lead">
               Ürünleri, kritik stokları ve depo hareketlerini tek panelden düzenli şekilde takip edin.
             </p>

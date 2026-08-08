@@ -3,7 +3,7 @@
 }
 
 .movements-table tbody tr {
-  transition: background 0.16s ease;
+  transition: background var(--motion-fast) var(--ease-ui);
 }
 
 .date-cell {
@@ -11,12 +11,14 @@
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .description-cell {
   max-width: 400px;
-  color: #475569;
+  color: var(--muted);
   line-height: 1.45;
 }
 

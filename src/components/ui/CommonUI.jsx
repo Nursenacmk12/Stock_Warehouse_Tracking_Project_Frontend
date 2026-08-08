@@ -74,6 +74,14 @@ export function SelectInput({ label, error, children, ...props }) {
 }
 
 export function Modal({ title, children, onClose, size = "" }) {
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={onClose}>
       <div className={`modal ${size}`.trim()} role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>

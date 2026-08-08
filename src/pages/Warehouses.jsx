@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Button,
   ConfirmDialog,
@@ -11,6 +12,14 @@ import {
 } from "../components/ui/CommonUI.jsx";
 import { useAuth } from "../context/useAuth.js";
 import { createWarehouse, deleteWarehouse, fetchWarehouses, updateWarehouse } from "../services/warehouseApi.js";
+
+const warehouseEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M3 21V8l9-5 9 5v13" />
+    <path d="M9 21v-7h6v7" />
+    <path d="M7 10h10" />
+  </svg>
+);
 
 const emptyForm = { code: "", name: "", location: "" };
 
@@ -151,16 +160,24 @@ function Warehouses() {
 
       <Toast message={message} />
 
-      <FilterBar>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Depo kodu, adı veya lokasyon ara" />
-        <Button onClick={loadData}>Yenile</Button>
+      <FilterBar actions={<Button onClick={loadData}>Yenile</Button>}>
+        <input
+          className="filter-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Depo kodu, adı veya lokasyon ara"
+          aria-label="Depo ara"
+        />
       </FilterBar>
 
       <div className="card">
         <div className="card-header">
           <div>
             <h2>Depo Listesi</h2>
-            <p>{filteredWarehouses.length} depo gösteriliyor</p>
+            <p className="list-card-meta">
+              <strong>{filteredWarehouses.length}</strong> depo gösteriliyor
+            </p>
           </div>
         </div>
         <DataTable
@@ -168,7 +185,24 @@ function Warehouses() {
           rows={filteredWarehouses}
           getRowKey={(warehouse) => warehouse.id}
           loading={loading}
-          empty={<EmptyState title="Depo bulunamadı" text="API’den depo kaydı gelmedi." />}
+          empty={
+            <EmptyState
+              icon={warehouseEmptyIcon}
+              title="Depo bulunamadı"
+              text="API’den depo kaydı gelmedi."
+              action={
+                editable ? (
+                  <Button variant="primary" onClick={() => openModal()}>
+                    Yeni Depo
+                  </Button>
+                ) : (
+                  <Link to="/stocks" className="btn btn-secondary">
+                    Stoklara git
+                  </Link>
+                )
+              }
+            />
+          }
         />
       </div>
 

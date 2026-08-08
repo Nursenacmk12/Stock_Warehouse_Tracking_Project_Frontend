@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Button,
   DataTable,
   EmptyState,
   FilterBar,
+  KpiCard,
   Pagination,
   StatusBadge,
   Toast,
@@ -11,6 +13,12 @@ import {
 import { fetchMovements, movementTypeOptions } from "../services/movementApi.js";
 import { downloadCsv } from "../utils/csv.js";
 import "./Movements.css";
+
+const movementEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M8 7h12m0 0l-4-4m4 4l-4 4M9 17H7a2 2 0 01-2-2V9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2h-2" />
+  </svg>
+);
 
 function formatDate(value) {
   if (!value) return "-";
@@ -77,6 +85,10 @@ function Movements() {
     setFilters((current) => ({ ...current, [key]: value, page: 1 }));
   };
 
+  const clearFilters = () => {
+    setFilters({ type: "", dateFrom: "", dateTo: "", page: 1 });
+  };
+
   const exportRows = () => {
     downloadCsv(
       "stok-hareketleri.csv",
@@ -101,7 +113,16 @@ function Movements() {
       header: "İşlem",
       render: (row) => <StatusBadge tone={row.typeCode}>{row.typeLabel}</StatusBadge>,
     },
-    { key: "productCode", header: "Malzeme" },
+    {
+      key: "productCode",
+      header: "Malzeme",
+      render: (row) => (
+        <div className="entity-name">
+          <strong>{row.productCode || "—"}</strong>
+          <span>{row.refNo || "Referans yok"}</span>
+        </div>
+      ),
+    },
     { key: "quantity", header: "Miktar", className: "numeric-cell" },
     {
       key: "warehouse",
@@ -112,7 +133,6 @@ function Movements() {
           : row.destWarehouseCode || row.sourceWarehouseCode || "-",
     },
     { key: "userName", header: "Kullanıcı", render: (row) => row.userName || "-" },
-    { key: "refNo", header: "Referans", render: (row) => row.refNo || "-" },
   ];
 
   return (
@@ -123,28 +143,44 @@ function Movements() {
           <h1>Stok Hareketleri</h1>
           <p>SAP stok giriş, çıkış ve depo transferlerini API’nin sayfalı hareket akışından takip edin.</p>
         </div>
-        <Button variant="primary" onClick={exportRows} disabled={rows.length === 0}>CSV Dışa Aktar</Button>
+        <Button variant="primary" onClick={exportRows} disabled={rows.length === 0}>
+          CSV Dışa Aktar
+        </Button>
       </div>
 
       <Toast message={message} />
 
-      <div className="mini-grid">
-        <article className="panel-card">
-          <span className="eyebrow">Giriş</span>
-          <h2>{summary.in}</h2>
-        </article>
-        <article className="panel-card">
-          <span className="eyebrow">Çıkış</span>
-          <h2>{summary.out}</h2>
-        </article>
-        <article className="panel-card">
-          <span className="eyebrow">Transfer</span>
-          <h2>{summary.transfer}</h2>
-        </article>
+      <div className="stats-grid">
+        <KpiCard label="Giriş (sayfa)" value={summary.in} tone="green" />
+        <KpiCard label="Çıkış (sayfa)" value={summary.out} tone="red" />
+        <KpiCard label="Transfer (sayfa)" value={summary.transfer} tone="blue" />
+        <KpiCard label="Toplam kayıt" value={meta.totalCount} tone="amber" />
       </div>
 
-      <FilterBar>
-        <select value={filters.type} onChange={(event) => updateFilter("type", event.target.value)}>
+      <FilterBar
+        secondary={
+          <>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(event) => updateFilter("dateFrom", event.target.value)}
+              aria-label="Başlangıç tarihi"
+            />
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(event) => updateFilter("dateTo", event.target.value)}
+              aria-label="Bitiş tarihi"
+            />
+          </>
+        }
+        actions={<Button onClick={loadData}>Yenile</Button>}
+      >
+        <select
+          value={filters.type}
+          onChange={(event) => updateFilter("type", event.target.value)}
+          aria-label="İşlem tipi"
+        >
           <option value="">Tüm işlemler</option>
           {movementTypeOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -152,18 +188,37 @@ function Movements() {
             </option>
           ))}
         </select>
-        <input type="date" value={filters.dateFrom} onChange={(event) => updateFilter("dateFrom", event.target.value)} />
-        <input type="date" value={filters.dateTo} onChange={(event) => updateFilter("dateTo", event.target.value)} />
-        <Button onClick={loadData}>Yenile</Button>
       </FilterBar>
 
       <div className="card">
+        <div className="card-header">
+          <div>
+            <h2>Hareket listesi</h2>
+            <p className="list-card-meta">
+              <strong>{meta.totalCount}</strong> kayıt · sayfa {meta.page}/{meta.totalPages || 1}
+            </p>
+          </div>
+        </div>
         <DataTable
           columns={columns}
           rows={rows}
           getRowKey={(row) => row.id}
           loading={loading}
-          empty={<EmptyState title="Hareket bulunamadı" text="Seçili filtrelerde stok hareketi yok." />}
+          empty={
+            <EmptyState
+              icon={movementEmptyIcon}
+              title="Hareket bulunamadı"
+              text="Seçili filtrelerde stok hareketi yok."
+              action={
+                <>
+                  <Button onClick={clearFilters}>Filtreleri temizle</Button>
+                  <Link to="/operations" className="btn btn-secondary">
+                    Operasyona git
+                  </Link>
+                </>
+              }
+            />
+          }
         />
         <Pagination
           page={meta.page}

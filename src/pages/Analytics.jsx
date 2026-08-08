@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Button, EmptyState, KpiCard, Toast } from "../components/ui/CommonUI.jsx";
+import { Button, EmptyState, FilterBar, KpiCard, Toast } from "../components/ui/CommonUI.jsx";
 import EmailReportDialog from "../components/EmailReportDialog.jsx";
 import { fetchDashboardSummary } from "../services/dashboardApi.js";
 import { fetchLowStockAlerts } from "../services/alertApi.js";
@@ -32,7 +32,6 @@ function Analytics() {
   const [granularity, setGranularity] = useState("daily");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [summary, setSummary] = useState(null);
   const [stockSummary, setStockSummary] = useState(null);
   const [trend, setTrend] = useState([]);
@@ -86,9 +85,6 @@ function Analytics() {
           <p>Stok trendleri, depo karşılaştırması ve kritik stok görünümü.</p>
         </div>
         <div className="operation-actions">
-          <Button className="filters-toggle" onClick={() => setFiltersOpen((v) => !v)}>
-            Filtreler
-          </Button>
           <Button onClick={load}>Yenile</Button>
           <Button variant="primary" onClick={() => setShowEmail(true)}>
             E-posta ile gönder
@@ -98,14 +94,14 @@ function Analytics() {
 
       <Toast message={message} onDismiss={() => setMessage({ type: "", text: "" })} />
 
-      <div className={`analytics-filters ${filtersOpen ? "open" : ""}`}>
-        <select value={granularity} onChange={(e) => setGranularity(e.target.value)}>
+      <FilterBar actions={<Button onClick={load}>Uygula</Button>}>
+        <select value={granularity} onChange={(e) => setGranularity(e.target.value)} aria-label="Granülarite">
           <option value="daily">Günlük</option>
           <option value="weekly">Haftalık</option>
         </select>
-        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-      </div>
+        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} aria-label="Başlangıç" />
+        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} aria-label="Bitiş" />
+      </FilterBar>
 
       {loading ? (
         <div className="skeleton-grid" aria-busy="true">
@@ -125,11 +121,14 @@ function Analytics() {
           <section className="dashboard-grid">
             <article className="card chart-card">
               <div className="card-header">
-                <h2>Hareket trendi</h2>
+                <div>
+                  <h2>Hareket trendi</h2>
+                  <p className="list-card-meta">{granularity === "daily" ? "Günlük" : "Haftalık"} görünüm</p>
+                </div>
               </div>
               <div className="chart-box">
                 {trend.length === 0 ? (
-                  <EmptyState title="Trend yok" text="Seçili dönemde hareket bulunamadı." />
+                  <EmptyState className="compact" title="Trend yok" text="Seçili dönemde hareket bulunamadı." />
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={trend}>
@@ -155,11 +154,16 @@ function Analytics() {
 
             <article className="card chart-card">
               <div className="card-header">
-                <h2>Depo karşılaştırması</h2>
+                <div>
+                  <h2>Depo karşılaştırması</h2>
+                  <p className="list-card-meta">
+                    <strong>{warehouses.length}</strong> depo
+                  </p>
+                </div>
               </div>
               <div className="chart-box">
                 {warehouses.length === 0 ? (
-                  <EmptyState title="Depo verisi yok" text="Karşılaştırma için stok satırı bulunamadı." />
+                  <EmptyState className="compact" title="Depo verisi yok" text="Karşılaştırma için stok satırı bulunamadı." />
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={warehouses.slice(0, 8)}>
@@ -176,11 +180,16 @@ function Analytics() {
 
             <article className="card chart-card">
               <div className="card-header">
-                <h2>Kategori dağılımı</h2>
+                <div>
+                  <h2>Kategori dağılımı</h2>
+                  <p className="list-card-meta">
+                    <strong>{categories.length}</strong> kategori
+                  </p>
+                </div>
               </div>
               <div className="chart-box">
                 {categories.length === 0 ? (
-                  <EmptyState title="Kategori yok" text="Dağılım verisi bulunamadı." />
+                  <EmptyState className="compact" title="Kategori yok" text="Dağılım verisi bulunamadı." />
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
@@ -202,17 +211,22 @@ function Analytics() {
 
             <article className="card chart-card">
               <div className="card-header">
-                <h2>Kritik stok özeti</h2>
+                <div>
+                  <h2>Kritik stok özeti</h2>
+                  <p className="list-card-meta">
+                    <strong>{alerts.length}</strong> satır
+                  </p>
+                </div>
               </div>
               {alerts.length === 0 ? (
-                <EmptyState title="Kritik stok yok" text="Eşik altı ürün bulunmuyor." />
+                <EmptyState className="compact" title="Kritik stok yok" text="Eşik altı ürün bulunmuyor." />
               ) : (
                 <ul className="alert-list">
                   {alerts.map((a) => (
                     <li key={`${a.materialNo}-${a.warehouseId}`}>
                       <strong>{a.productName || a.materialNo}</strong>
                       <span>
-                        {a.warehouseName}: {a.quantity}/{a.minLevel}
+                        {a.warehouseName}: <span className="num">{a.quantity}</span>/<span className="num">{a.minLevel}</span>
                       </span>
                     </li>
                   ))}

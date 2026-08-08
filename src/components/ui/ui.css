@@ -85,7 +85,19 @@
 .list-card-meta strong {
   color: var(--text);
   font-weight: 800;
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.date-cell {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .stats-grid {
@@ -159,6 +171,15 @@
   font-weight: 750;
 }
 
+.bar-row header span {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
 .bar-track {
   height: 10px;
   overflow: hidden;
@@ -230,10 +251,39 @@
   background: var(--surface);
   padding: 20px 18px;
   box-shadow: var(--shadow-card);
+  animation: kpiAppear var(--motion-fast) var(--ease-ui) both;
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    transform var(--motion-fast) var(--ease-ui),
+    box-shadow var(--motion-fast) var(--ease-ui),
+    border-color var(--motion-fast) var(--ease-ui);
+}
+
+@keyframes kpiAppear {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-grid .kpi-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.stats-grid .kpi-card:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.stats-grid .kpi-card:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.stats-grid .kpi-card:nth-child(4) {
+  animation-delay: 120ms;
 }
 
 .kpi-card::before {
@@ -305,18 +355,22 @@
 
 .kpi-value {
   color: var(--text);
+  font-family: var(--font-mono);
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   letter-spacing: -0.03em;
 }
 
 .kpi-label {
   margin-top: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .chart-card .empty-state {

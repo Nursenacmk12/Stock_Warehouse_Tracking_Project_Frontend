@@ -1,12 +1,23 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Button, EmptyState, FilterBar, LoadingState, Toast } from "../../components/ui/CommonUI.jsx";
 import { fetchUsers, fetchRoles, changeUserRole, deleteUser } from "../../services/userApi.js";
 import "./Users.css";
+
+const userEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
 
 function Users() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -26,6 +37,17 @@ function Users() {
     return () => window.clearTimeout(timer);
   }, [loadData]);
 
+  const filteredUsers = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return users;
+    return users.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term) ||
+        String(u.userId).includes(term),
+    );
+  }, [query, users]);
+
   const handleRoleChange = async (userId, newRoleId) => {
     const result = await changeUserRole(userId, Number(newRoleId));
     if (result.ok) {
@@ -34,7 +56,6 @@ function Users() {
     } else {
       setMessage({ type: "error", text: result.message });
     }
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
   };
 
   const handleDelete = async (userId) => {
@@ -46,7 +67,6 @@ function Users() {
     } else {
       setMessage({ type: "error", text: result.message });
     }
-    setTimeout(() => setMessage({ type: "", text: "" }), 3000);
   };
 
   return (
@@ -65,29 +85,42 @@ function Users() {
         </Link>
       </div>
 
-      {message.text && (
-        <div className={`message ${message.type}`} role="status">
-          {message.text}
-        </div>
-      )}
+      <Toast message={message} onDismiss={() => setMessage({ type: "", text: "" })} />
+
+      <FilterBar actions={<Button onClick={loadData}>Yenile</Button>}>
+        <input
+          className="filter-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ad, e-posta veya ID ara"
+          aria-label="Kullanıcı ara"
+        />
+      </FilterBar>
 
       <div className="card">
         <div className="card-header">
           <div>
             <h2>Kullanıcılar</h2>
-            <p>{users.length} kayıtlı kullanıcı</p>
+            <p className="list-card-meta">
+              <strong>{filteredUsers.length}</strong> kullanıcı gösteriliyor
+            </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="empty-state">
-            <p>Yükleniyor...</p>
-          </div>
-        ) : users.length === 0 ? (
-          <div className="empty-state">
-            <strong>Kullanıcı bulunamadı</strong>
-            <p>Henüz kayıtlı kullanıcı yok.</p>
-          </div>
+          <LoadingState text="Kullanıcılar yükleniyor..." />
+        ) : filteredUsers.length === 0 ? (
+          <EmptyState
+            icon={userEmptyIcon}
+            title="Kullanıcı bulunamadı"
+            text={users.length === 0 ? "Henüz kayıtlı kullanıcı yok." : "Arama sonucu eşleşmedi."}
+            action={
+              <Link to="/admin/users/new" className="btn btn-primary">
+                Yeni Kullanıcı
+              </Link>
+            }
+          />
         ) : (
           <div className="table-wrap">
             <table className="data-table">
@@ -103,10 +136,15 @@ function Users() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {filteredUsers.map((u) => (
                   <tr key={u.userId} className={u.isDeleted ? "danger-row" : ""}>
                     <td className="numeric-cell">{u.userId}</td>
-                    <td className="product-title">{u.name}</td>
+                    <td>
+                      <div className="entity-name">
+                        <strong>{u.name}</strong>
+                        <span>#{u.userId}</span>
+                      </div>
+                    </td>
                     <td>{u.email}</td>
                     <td>
                       <select
@@ -135,6 +173,7 @@ function Users() {
                             className="btn-icon-only danger"
                             onClick={() => handleDelete(u.userId)}
                             title="Onayla"
+                            type="button"
                           >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <polyline points="20 6 9 17 4 12" />
@@ -144,10 +183,10 @@ function Users() {
                             className="btn-icon-only"
                             onClick={() => setConfirmDelete(null)}
                             title="İptal"
+                            type="button"
                           >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <line x1="18" y1="6" x2="6" y2="18" />
-                              <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                           </button>
                         </div>
@@ -157,6 +196,7 @@ function Users() {
                           onClick={() => setConfirmDelete(u.userId)}
                           disabled={u.isDeleted}
                           title="Sil"
+                          type="button"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <polyline points="3 6 5 6 21 6" />

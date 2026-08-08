@@ -97,12 +97,12 @@ function Register() {
 
   return (
     <div className="auth-page">
-      <section className="auth-card" aria-label="Stok takip sistemi kayıt formu">
+      <section className="auth-card" aria-label="StockGuard kayıt formu">
         <div className="auth-brand-panel">
-          <div className="brand-mark">ST</div>
+          <img className="brand-mark brand-mark-logo" src="/stockguard-icon.png" alt="" />
           <div>
             <p className="eyebrow">Yeni hesap</p>
-            <h1>Stok Takip Sistemi</h1>
+            <h1>StockGuard</h1>
             <p className="auth-lead">
               Stok süreçlerinizi daha net, izlenebilir ve düzenli yönetmek için hesabınızı oluşturun.
             </p>

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth.js";
 import { useTheme } from "../context/useTheme.js";
 import { fetchLowStockCount } from "../services/alertApi.js";
+import CommandPalette from "./CommandPalette.jsx";
 import "./Layout.css";
 
 const pageMeta = {
@@ -24,7 +25,8 @@ const pageMeta = {
 
 const alertRoles = ["SuperAdmin", "Admin", "WarehouseManager"];
 
-const SIDEBAR_COLLAPSED_KEY = "stok-takip-sidebar-collapsed";
+const SIDEBAR_COLLAPSED_KEY = "stockguard-sidebar-collapsed";
+const SIDEBAR_EXPANDED_SECTIONS_KEY = "stockguard-sidebar-expanded-sections";
 
 const navGroups = [
   {
@@ -73,6 +75,8 @@ const systemGroup = {
     { path: "/admin/users", label: "Kullanıcı Yönetimi", icon: "users", roles: ["SuperAdmin"] },
   ],
 };
+
+const allNavGroups = [...navGroups, systemGroup];
 
 const icons = {
   dashboard: (
@@ -197,6 +201,11 @@ const icons = {
       <path d="M13 17l5-5-5-5M6 17l5-5-5-5" />
     </svg>
   ),
+  chevron: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  ),
   bell: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -208,7 +217,7 @@ const icons = {
 function resolvePageMeta(pathname) {
   if (pageMeta[pathname]) return pageMeta[pathname];
   const match = Object.keys(pageMeta).find((path) => pathname.startsWith(`${path}/`));
-  return match ? pageMeta[match] : { section: "Panel", title: "Stok Takip" };
+  return match ? pageMeta[match] : { section: "Panel", title: "StockGuard" };
 }
 
 function userInitials(displayName) {
@@ -222,6 +231,36 @@ function userInitials(displayName) {
 
 function filterVisibleItems(items, role) {
   return items.filter((item) => !item.roles || item.roles.includes(role));
+}
+
+function groupContainsPath(group, pathname) {
+  return group.items.some(
+    (item) => pathname === item.path || pathname.startsWith(`${item.path}/`),
+  );
+}
+
+function readExpandedSections() {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_EXPANDED_SECTIONS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeExpandedSections(ids) {
+  try {
+    localStorage.setItem(SIDEBAR_EXPANDED_SECTIONS_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* ignore */
+  }
+}
+
+function defaultExpandedIds(pathname) {
+  const active = allNavGroups.filter((group) => groupContainsPath(group, pathname)).map((g) => g.id);
+  return new Set(active.length ? active : ["genel"]);
 }
 
 function NavItem({ item, alertCount, collapsed }) {
@@ -244,26 +283,45 @@ function NavItem({ item, alertCount, collapsed }) {
   );
 }
 
-function NavGroup({ group, role, alertCount, collapsed }) {
+function NavGroup({ group, role, alertCount, collapsed, expanded, onToggle }) {
   const visible = filterVisibleItems(group.items, role);
   if (visible.length === 0) return null;
 
+  const panelId = `nav-group-panel-${group.id}`;
+  const labelId = `nav-group-${group.id}`;
+  const isOpen = collapsed || expanded;
+
   return (
-    <div className="nav-group">
+    <div className={`nav-group ${isOpen ? "is-open" : "is-collapsed"}`}>
       {!collapsed && (
-        <span className="nav-group-label" id={`nav-group-${group.id}`}>
-          {group.label}
-        </span>
+        <button
+          type="button"
+          className="nav-group-toggle"
+          id={labelId}
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          onClick={() => onToggle(group.id)}
+        >
+          <span className="nav-group-label-text">{group.label}</span>
+          <span className={`nav-group-chevron ${expanded ? "open" : ""}`} aria-hidden="true">
+            {icons.chevron}
+          </span>
+        </button>
       )}
       <div
-        className="nav-group-items"
+        id={panelId}
+        className={`nav-group-panel ${isOpen ? "open" : ""}`}
         role="group"
-        aria-labelledby={collapsed ? undefined : `nav-group-${group.id}`}
+        aria-labelledby={collapsed ? undefined : labelId}
         aria-label={collapsed ? group.label : undefined}
+        aria-hidden={!isOpen}
+        {...(!isOpen ? { inert: "" } : {})}
       >
-        {visible.map((item) => (
-          <NavItem key={item.path} item={item} alertCount={alertCount} collapsed={collapsed} />
-        ))}
+        <div className="nav-group-items">
+          {visible.map((item) => (
+            <NavItem key={item.path} item={item} alertCount={alertCount} collapsed={collapsed} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -275,12 +333,26 @@ function Layout({ children }) {
   const { logout, user } = useAuth();
   const { theme, preference, cyclePreference } = useTheme();
   const [alertCount, setAlertCount] = useState(0);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+      const next = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+      if (next === null) {
+        const legacy = localStorage.getItem("stok-takip-sidebar-collapsed");
+        return legacy === "1";
+      }
+      return next === "1";
     } catch {
       return false;
     }
+  });
+  const [expandedSections, setExpandedSections] = useState(() => {
+    const stored = readExpandedSections();
+    const base = stored ? new Set(stored) : defaultExpandedIds(window.location.pathname);
+    allNavGroups.forEach((group) => {
+      if (groupContainsPath(group, window.location.pathname)) base.add(group.id);
+    });
+    return base;
   });
 
   const themeLabel =
@@ -294,6 +366,29 @@ function Layout({ children }) {
 
   const currentPage = useMemo(() => resolvePageMeta(location.pathname), [location.pathname]);
   const canSeeAlerts = alertRoles.includes(user?.role);
+  const role = user?.role;
+
+  const commandItems = useMemo(() => {
+    const groups = [...navGroups, systemGroup];
+    return groups.flatMap((group) =>
+      filterVisibleItems(group.items, role).map((item) => ({
+        path: item.path,
+        label: item.label,
+        group: group.label,
+      })),
+    );
+  }, [role]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCmdOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -317,6 +412,38 @@ function Layout({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      allNavGroups.forEach((group) => {
+        if (groupContainsPath(group, location.pathname) && !next.has(group.id)) {
+          next.add(group.id);
+          changed = true;
+        }
+      });
+      if (changed) writeExpandedSections(next);
+      return changed ? next : prev;
+    });
+  }, [location.pathname]);
+
+  const toggleSection = (groupId) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        const activeGroup = allNavGroups.find((group) => groupContainsPath(group, location.pathname));
+        if (activeGroup?.id === groupId) {
+          return prev;
+        }
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      writeExpandedSections(next);
+      return next;
+    });
+  };
+
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
       const next = !prev;
@@ -334,19 +461,22 @@ function Layout({ children }) {
     navigate("/");
   };
 
-  const role = user?.role;
-
   return (
     <div className={`layout ${collapsed ? "sidebar-collapsed" : ""}`}>
       <aside className="sidebar" aria-label="Kenar çubuğu">
         <div className="sidebar-header">
-          <div className="sidebar-logo" aria-hidden="true">
-            ST
-          </div>
-          {!collapsed && (
-            <div className="sidebar-brand-text">
-              <h1>Stok Takip</h1>
-              <p>Yönetim paneli</p>
+          {collapsed ? (
+            <div className="sidebar-logo" aria-hidden="true">
+              <img src="/stockguard-icon.png" alt="" className="sidebar-logo-img" />
+            </div>
+          ) : (
+            <div className="sidebar-brand">
+              <img
+                src="/stockguard-logo.png"
+                alt="StockGuard"
+                className="sidebar-brand-logo"
+              />
+              <p className="sidebar-tagline">Stok & Depo Yönetim Takip Sistemi</p>
             </div>
           )}
           <button
@@ -370,12 +500,21 @@ function Layout({ children }) {
                 role={role}
                 alertCount={alertCount}
                 collapsed={collapsed}
+                expanded={expandedSections.has(group.id)}
+                onToggle={toggleSection}
               />
             ))}
           </div>
 
           <div className="sidebar-nav-system">
-            <NavGroup group={systemGroup} role={role} alertCount={alertCount} collapsed={collapsed} />
+            <NavGroup
+              group={systemGroup}
+              role={role}
+              alertCount={alertCount}
+              collapsed={collapsed}
+              expanded={expandedSections.has(systemGroup.id)}
+              onToggle={toggleSection}
+            />
           </div>
         </nav>
 
@@ -403,6 +542,15 @@ function Layout({ children }) {
             <strong>{currentPage.title}</strong>
           </nav>
           <div className="topbar-actions">
+            <button
+              type="button"
+              className="topbar-cmdk"
+              onClick={() => setCmdOpen(true)}
+              title="Hızlı gezinme (Ctrl/⌘ K)"
+            >
+              <span>Gezin</span>
+              <kbd>Ctrl K</kbd>
+            </button>
             {canSeeAlerts && (
               <NavLink
                 to="/alerts"
@@ -432,6 +580,13 @@ function Layout({ children }) {
 
         <main className="main-content">{children}</main>
       </div>
+
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        items={commandItems}
+        onNavigate={(path) => navigate(path)}
+      />
     </div>
   );
 }

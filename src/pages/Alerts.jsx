@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   DataTable,
   EmptyState,
   FilterBar,
+  Modal,
   StatusBadge,
   TextInput,
   Toast,
@@ -12,6 +14,13 @@ import {
 import { updateStockThreshold } from "../services/alertApi.js";
 import { useLowStockAlerts } from "../hooks/useQueries.js";
 import { queryKeys } from "../lib/queryClient.js";
+
+const alertEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+    <path d="M12 9v4M12 17h.01" />
+  </svg>
+);
 
 function Alerts() {
   const queryClient = useQueryClient();
@@ -49,8 +58,16 @@ function Alerts() {
   };
 
   const columns = [
-    { key: "productName", header: "Ürün" },
-    { key: "materialNo", header: "Kod" },
+    {
+      key: "productName",
+      header: "Ürün",
+      render: (row) => (
+        <div className="entity-name">
+          <strong>{row.productName}</strong>
+          <span>{row.materialNo}</span>
+        </div>
+      ),
+    },
     { key: "warehouseName", header: "Depo" },
     { key: "quantity", header: "Mevcut", className: "numeric-cell" },
     { key: "minLevel", header: "Min", className: "numeric-cell" },
@@ -62,10 +79,9 @@ function Alerts() {
     },
     {
       key: "actions",
-      header: "",
+      header: "İşlemler",
       render: (row) => (
         <Button
-          variant="secondary"
           onClick={() => {
             setEditing(row);
             setMinLevel(String(row.minLevel));
@@ -91,38 +107,68 @@ function Alerts() {
       <Toast message={message} onDismiss={() => setMessage({ type: "", text: "" })} />
 
       <FilterBar>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ürün veya depo ara" />
+        <input
+          className="filter-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ürün, kod veya depo ara"
+          aria-label="Uyarı ara"
+        />
       </FilterBar>
 
       <div className="card">
+        <div className="card-header">
+          <div>
+            <h2>Kritik stok listesi</h2>
+            <p className="list-card-meta">
+              <strong>{rows.length}</strong> uyarı gösteriliyor
+            </p>
+          </div>
+        </div>
         <DataTable
           columns={columns}
           rows={rows}
           getRowKey={(row) => `${row.materialNo}-${row.warehouseId}`}
           loading={isLoading}
-          empty={<EmptyState title="Kritik stok yok" text="Tüm stoklar tanımlı eşiklerin üzerinde." />}
+          empty={
+            <EmptyState
+              icon={alertEmptyIcon}
+              title="Kritik stok yok"
+              text="Tüm stoklar tanımlı eşiklerin üzerinde."
+              action={
+                <Link to="/stocks" className="btn btn-secondary">
+                  Stoklara git
+                </Link>
+              }
+            />
+          }
         />
       </div>
 
       {editing && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h2>Eşik Güncelle — {editing.productName}</h2>
-          <TextInput
-            label="Min seviye"
-            type="number"
-            min="0"
-            value={minLevel}
-            onChange={(e) => setMinLevel(e.target.value)}
-          />
-          <div className="operation-actions">
-            <Button variant="primary" onClick={handleSaveThreshold} disabled={busy}>
-              Kaydet
-            </Button>
-            <Button onClick={() => setEditing(null)} disabled={busy}>
-              Vazgeç
-            </Button>
+        <Modal title={`Eşik Güncelle — ${editing.productName}`} onClose={() => setEditing(null)} size="modal-sm">
+          <div className="modal-body">
+            <p className="confirm-text">
+              {editing.materialNo} · {editing.warehouseName}
+            </p>
+            <TextInput
+              label="Min seviye"
+              type="number"
+              min="0"
+              value={minLevel}
+              onChange={(e) => setMinLevel(e.target.value)}
+            />
+            <div className="modal-footer">
+              <Button onClick={() => setEditing(null)} disabled={busy}>
+                Vazgeç
+              </Button>
+              <Button variant="primary" onClick={handleSaveThreshold} disabled={busy}>
+                {busy ? "Kaydediliyor..." : "Kaydet"}
+              </Button>
+            </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

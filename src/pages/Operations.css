@@ -388,10 +388,12 @@
 .ops-qty {
   margin: 4px 0 6px !important;
   color: var(--text) !important;
+  font-family: var(--font-mono) !important;
   font-size: 34px !important;
-  font-weight: 850;
+  font-weight: 700;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   line-height: 1;
 }
 
@@ -419,8 +421,8 @@
   color: var(--text);
   cursor: pointer;
   transition:
-    border-color 0.16s ease,
-    background 0.16s ease;
+    border-color var(--motion-fast) var(--ease-ui),
+    background var(--motion-fast) var(--ease-ui);
 }
 
 .ops-related-list button:hover {
@@ -429,8 +431,11 @@
 }
 
 .ops-related-list span {
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.02em;
 }
 
 .ops-tip code {

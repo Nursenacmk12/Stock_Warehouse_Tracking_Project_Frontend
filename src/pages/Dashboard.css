@@ -178,9 +178,12 @@
 .critical-meta > span {
   margin-bottom: 8px;
   color: var(--danger);
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   font-size: 14px;
+  letter-spacing: -0.02em;
 }
 
 .stock-bar {
