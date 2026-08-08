@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Button,
   ConfirmDialog,
@@ -16,6 +17,12 @@ import { fetchStocks, stockIn, stockOut, transferStock } from "../services/stock
 import { fetchWarehouses } from "../services/warehouseApi.js";
 import { useAuth } from "../context/useAuth.js";
 import "./Products.css";
+
+const productEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  </svg>
+);
 
 const emptyProductForm = { code: "", name: "", unit: "ADET", category: "", barcode: "" };
 const emptyStockForm = {
@@ -290,9 +297,27 @@ function Products() {
 
       <Toast message={message} />
 
-      <FilterBar>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ürün adı, kod veya kategori ara" />
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+      <FilterBar
+        secondary={
+          <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Ürün durumu">
+            <option value="">Tüm durumlar</option>
+            <option value="local">Yerel kayıt</option>
+            <option value="sap">SAP katalog</option>
+            <option value="in-stock">Stok var</option>
+            <option value="empty">Stok yok</option>
+          </select>
+        }
+        actions={<Button onClick={loadData}>Yenile</Button>}
+      >
+        <input
+          className="filter-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ürün adı, kod veya kategori ara"
+          aria-label="Ürün ara"
+        />
+        <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Kategori filtresi">
           <option value="">Tüm kategoriler</option>
           {categories.map((item) => (
             <option key={item} value={item}>
@@ -300,21 +325,15 @@ function Products() {
             </option>
           ))}
         </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">Tüm durumlar</option>
-          <option value="local">Yerel kayıt</option>
-          <option value="sap">SAP katalog</option>
-          <option value="in-stock">Stok var</option>
-          <option value="empty">Stok yok</option>
-        </select>
-        <Button onClick={loadData}>Yenile</Button>
       </FilterBar>
 
       <div className="card">
         <div className="card-header">
           <div>
             <h2>Ürün Kataloğu</h2>
-            <p>{filteredProducts.length} ürün gösteriliyor</p>
+            <p className="list-card-meta">
+              <strong>{filteredProducts.length}</strong> ürün gösteriliyor
+            </p>
           </div>
         </div>
         <DataTable
@@ -322,7 +341,24 @@ function Products() {
           rows={filteredProducts}
           getRowKey={(product) => `${product.code}-${product.id}`}
           loading={loading}
-          empty={<EmptyState title="Ürün bulunamadı" text="API’den ürün gelmedi veya filtreler sonuç döndürmedi." />}
+          empty={
+            <EmptyState
+              icon={productEmptyIcon}
+              title="Ürün bulunamadı"
+              text="API’den ürün gelmedi veya filtreler sonuç döndürmedi."
+              action={
+                canWriteProducts ? (
+                  <Button variant="primary" onClick={() => openProductModal()}>
+                    Yeni Ürün
+                  </Button>
+                ) : (
+                  <Link to="/stocks" className="btn btn-secondary">
+                    Stoklara git
+                  </Link>
+                )
+              }
+            />
+          }
         />
       </div>
 

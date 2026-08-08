@@ -629,6 +629,32 @@ svg {
   margin-top: 6px;
 }
 
+.empty-state.compact {
+  min-height: 0;
+  gap: 8px;
+  padding: 22px 16px;
+}
+
+.empty-state.compact .empty-state-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.empty-state.compact .empty-state-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.empty-state.compact strong {
+  font-size: 14px;
+}
+
+.empty-state.compact p {
+  max-width: 320px;
+  font-size: 13px;
+}
+
 a.btn {
   display: inline-flex;
   align-items: center;
@@ -862,6 +888,7 @@ a.btn {
   }
 
   .filters select,
+  .filters input,
   .search-box {
     width: 100%;
     min-width: 0;

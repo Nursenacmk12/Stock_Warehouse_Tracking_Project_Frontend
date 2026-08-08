@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Button,
   DataTable,
@@ -12,6 +13,14 @@ import { fetchProducts } from "../services/productApi.js";
 import { fetchStocks } from "../services/stockApi.js";
 import { fetchWarehouses } from "../services/warehouseApi.js";
 import { downloadCsv } from "../utils/csv.js";
+
+const stockEmptyIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+    <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+    <path d="M3 8v8l9 5 9-5V8" />
+    <path d="M12 13v8" />
+  </svg>
+);
 
 function formatDate(value) {
   if (!value) return "-";
@@ -148,7 +157,9 @@ function Stocks() {
           <h1>Stoklar</h1>
           <p>Malzeme ve depo bazlı SAP stok miktarlarını canlı API verisiyle izleyin.</p>
         </div>
-        <Button variant="primary" onClick={exportRows} disabled={rows.length === 0}>CSV Dışa Aktar</Button>
+        <Button variant="primary" onClick={exportRows} disabled={rows.length === 0}>
+          CSV Dışa Aktar
+        </Button>
       </div>
 
       <Toast message={message} />
@@ -160,9 +171,25 @@ function Stocks() {
         <KpiCard label="Stok Yok" value={totals.emptyCount} tone="red" />
       </div>
 
-      <FilterBar>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Malzeme, ürün veya depo ara" />
-        <select value={warehouse} onChange={(event) => setWarehouse(event.target.value)}>
+      <FilterBar
+        secondary={
+          <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Stok durumu">
+            <option value="">Tüm durumlar</option>
+            <option value="available">Stok var</option>
+            <option value="empty">Stok yok</option>
+          </select>
+        }
+        actions={<Button onClick={loadData}>Yenile</Button>}
+      >
+        <input
+          className="filter-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Malzeme, ürün veya depo ara"
+          aria-label="Stok ara"
+        />
+        <select value={warehouse} onChange={(event) => setWarehouse(event.target.value)} aria-label="Depo filtresi">
           <option value="">Tüm depolar</option>
           {warehouses.map((item) => (
             <option key={item.code} value={item.code}>
@@ -170,21 +197,37 @@ function Stocks() {
             </option>
           ))}
         </select>
-        <select value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option value="">Tüm durumlar</option>
-          <option value="available">Stok var</option>
-          <option value="empty">Stok yok</option>
-        </select>
-        <Button onClick={loadData}>Yenile</Button>
       </FilterBar>
 
       <div className="card">
+        <div className="card-header">
+          <div>
+            <h2>Stok listesi</h2>
+            <p className="list-card-meta">
+              <strong>{rows.length}</strong> satır gösteriliyor
+            </p>
+          </div>
+        </div>
         <DataTable
           columns={columns}
           rows={rows}
           getRowKey={(stock) => stock.id}
           loading={loading}
-          empty={<EmptyState title="Stok bulunamadı" text="SAP stok servisi sonuç döndürmedi." />}
+          empty={
+            <EmptyState
+              icon={stockEmptyIcon}
+              title="Stok bulunamadı"
+              text="SAP stok servisi sonuç döndürmedi veya filtreler eşleşmedi."
+              action={
+                <>
+                  <Button onClick={loadData}>Yenile</Button>
+                  <Link to="/operations" className="btn btn-secondary">
+                    Operasyona git
+                  </Link>
+                </>
+              }
+            />
+          }
         />
       </div>
     </div>

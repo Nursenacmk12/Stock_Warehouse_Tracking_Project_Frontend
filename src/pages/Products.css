@@ -4,7 +4,9 @@
   padding: 16px 18px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--primary) 5%, transparent), transparent 40%),
+    var(--surface);
   box-shadow: var(--shadow-card);
 }
 
@@ -37,10 +39,10 @@
   display: inline-flex;
   align-items: center;
   min-height: 28px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
   border-radius: 999px;
-  background: linear-gradient(180deg, #eef2ff, #e0e7ff);
-  color: #3730a3;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 750;
@@ -58,7 +60,7 @@
   margin: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: linear-gradient(180deg, #ffffff, var(--surface-muted));
+  background: var(--surface-muted);
   padding: 12px 14px;
   color: var(--text);
   font-weight: 800;

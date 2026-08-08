@@ -166,9 +166,9 @@ export function StatusBadge({ tone = "neutral", children }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }
 
-export function EmptyState({ title, text, action, icon }) {
+export function EmptyState({ title, text, action, icon, className = "" }) {
   return (
-    <div className="empty-state">
+    <div className={`empty-state ${className}`.trim()}>
       <div className="empty-state-icon">{icon ?? emptyStateIcon}</div>
       <strong>{title}</strong>
       {text && <p>{text}</p>}

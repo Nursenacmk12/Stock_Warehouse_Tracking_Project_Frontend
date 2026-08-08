@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Html5Qrcode } from "html5-qrcode";
-import { Button, SelectInput, TextInput, Toast } from "../components/ui/CommonUI.jsx";
+import { Button, EmptyState, SelectInput, TextInput, Toast } from "../components/ui/CommonUI.jsx";
 import { stockIn, stockOut, transferStock, fetchStockDetail, fetchStocks } from "../services/stockApi.js";
 import { useProducts, useWarehouses } from "../hooks/useQueries.js";
 import { useStockHub } from "../hooks/useStockHub.js";
@@ -560,7 +560,11 @@ function Operations() {
               <h3>Son işlemler</h3>
             </div>
             {history.length === 0 ? (
-              <p className="ops-empty">Henüz bu oturumda işlem yok. Kaydettiğiniz hareketler burada listelenir.</p>
+              <EmptyState
+                className="compact"
+                title="Henüz işlem yok"
+                text="Bu oturumda kaydettiğiniz giriş, çıkış ve transferler burada listelenir."
+              />
             ) : (
               <ul className="ops-history-list">
                 {history.map((entry) => (
@@ -671,7 +675,11 @@ function Operations() {
             <span className="eyebrow">Diğer depolar</span>
             <h3>Aynı malzeme</h3>
             {relatedStocks.length === 0 ? (
-              <p>Malzeme seçildiğinde diğer depolardaki miktarlar listelenir.</p>
+              <EmptyState
+                className="compact"
+                title="Diğer depo yok"
+                text="Malzeme seçildiğinde diğer depolardaki miktarlar listelenir."
+              />
             ) : (
               <ul className="ops-related-list">
                 {relatedStocks.map((row) => (
