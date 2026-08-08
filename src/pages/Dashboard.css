@@ -98,6 +98,11 @@
   box-shadow: 0 0 8px color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
+.sap-indicator.mock .sap-dot {
+  background: var(--amber);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--amber) 40%, transparent);
+}
+
 @keyframes sapPulse {
   0%,
   100% {

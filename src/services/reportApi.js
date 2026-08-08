@@ -1,17 +1,39 @@
+import {
+  MOCK_MOVEMENT_TREND,
+  MOCK_STOCK_SUMMARY_REPORT,
+  MOCK_WAREHOUSE_COMPARISON,
+} from "../data/mockSapData.js";
 import { request, getApiBaseUrl } from "./apiClient.js";
+import { withSapMockFallback } from "./sapFallback.js";
 
 export async function fetchStockSummaryReport() {
-  return request("/api/reports/stock-summary");
+  return withSapMockFallback(
+    () => request("/api/reports/stock-summary"),
+    () => ({ ...MOCK_STOCK_SUMMARY_REPORT }),
+    {
+      label: "stock-summary",
+      isEmpty: (data) => !data || (Number(data.totalQuantity ?? 0) === 0 && Number(data.productCount ?? 0) === 0),
+    },
+  );
 }
 
 export async function fetchMovementTrend(granularity = "daily", dateFrom, dateTo) {
-  return request("/api/reports/movement-trend", {
-    query: { granularity, dateFrom, dateTo },
-  });
+  return withSapMockFallback(
+    () =>
+      request("/api/reports/movement-trend", {
+        query: { granularity, dateFrom, dateTo },
+      }),
+    () => MOCK_MOVEMENT_TREND.map((row) => ({ ...row })),
+    { label: "movement-trend", isEmpty: (rows) => !Array.isArray(rows) || rows.length === 0 },
+  );
 }
 
 export async function fetchWarehouseComparison() {
-  return request("/api/reports/warehouse-comparison");
+  return withSapMockFallback(
+    () => request("/api/reports/warehouse-comparison"),
+    () => MOCK_WAREHOUSE_COMPARISON.map((row) => ({ ...row })),
+    { label: "warehouse-comparison", isEmpty: (rows) => !Array.isArray(rows) || rows.length === 0 },
+  );
 }
 
 export async function emailReport(payload) {
@@ -21,6 +43,7 @@ export async function emailReport(payload) {
       to: payload.to || null,
       periodDays: Number(payload.periodDays ?? 7),
       includeCsv: Boolean(payload.includeCsv ?? true),
+      provider: payload.provider || null,
     },
   });
 }

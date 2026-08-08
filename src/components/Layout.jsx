@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuth.js";
 import { useTheme } from "../context/useTheme.js";
 import { fetchLowStockCount } from "../services/alertApi.js";
+import { subscribeSapFallback } from "../services/sapFallback.js";
 import CommandPalette from "./CommandPalette.jsx";
 import "./Layout.css";
 
@@ -60,6 +61,7 @@ const navGroups = [
     id: "icgoru",
     label: "İçgörü",
     items: [
+      // Manager ≠ Reports (analytics-only for Manager)
       { path: "/reports", label: "Raporlar", icon: "reports", roles: ["SuperAdmin", "Admin"] },
     ],
   },
@@ -260,7 +262,10 @@ function writeExpandedSections(ids) {
 
 function defaultExpandedIds(pathname) {
   const active = allNavGroups.filter((group) => groupContainsPath(group, pathname)).map((g) => g.id);
-  return new Set(active.length ? active : ["genel"]);
+  const ids = new Set(active.length ? active : ["genel"]);
+  // Keep system links reachable; collapsed accordion + overflow was blocking the last item.
+  ids.add("sistem");
+  return ids;
 }
 
 function NavItem({ item, alertCount, collapsed }) {
@@ -315,7 +320,7 @@ function NavGroup({ group, role, alertCount, collapsed, expanded, onToggle }) {
         aria-labelledby={collapsed ? undefined : labelId}
         aria-label={collapsed ? group.label : undefined}
         aria-hidden={!isOpen}
-        {...(!isOpen ? { inert: "" } : {})}
+        inert={!isOpen ? true : undefined}
       >
         <div className="nav-group-items">
           {visible.map((item) => (
@@ -349,11 +354,13 @@ function Layout({ children }) {
   const [expandedSections, setExpandedSections] = useState(() => {
     const stored = readExpandedSections();
     const base = stored ? new Set(stored) : defaultExpandedIds(window.location.pathname);
+    base.add("sistem");
     allNavGroups.forEach((group) => {
       if (groupContainsPath(group, window.location.pathname)) base.add(group.id);
     });
     return base;
   });
+  const [mockMode, setMockMode] = useState(() => ({ active: false, reason: "", source: "live" }));
 
   const themeLabel =
     preference === "system" ? "Sistem Teması" : preference === "dark" ? "Koyu Tema" : "Açık Tema";
@@ -389,6 +396,8 @@ function Layout({ children }) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  useEffect(() => subscribeSapFallback(setMockMode), []);
 
   useEffect(() => {
     let alive = true;
@@ -465,30 +474,28 @@ function Layout({ children }) {
     <div className={`layout ${collapsed ? "sidebar-collapsed" : ""}`}>
       <aside className="sidebar" aria-label="Kenar çubuğu">
         <div className="sidebar-header">
-          {collapsed ? (
-            <div className="sidebar-logo" aria-hidden="true">
-              <img src="/stockguard-icon.png" alt="" className="sidebar-logo-img" />
-            </div>
-          ) : (
-            <div className="sidebar-brand">
-              <img
-                src="/stockguard-logo.png"
-                alt="StockGuard"
-                className="sidebar-brand-logo"
-              />
-              <p className="sidebar-tagline">Stok & Depo Yönetim Takip Sistemi</p>
-            </div>
-          )}
-          <button
-            type="button"
-            className="sidebar-collapse-btn"
-            onClick={toggleCollapsed}
-            title={collapsed ? "Menüyü genişlet" : "Menüyü daralt"}
-            aria-label={collapsed ? "Menüyü genişlet" : "Menüyü daralt"}
-            aria-pressed={collapsed}
-          >
-            <span className="nav-icon">{collapsed ? icons.expand : icons.collapse}</span>
-          </button>
+          <div className="sidebar-brand-row">
+            {collapsed ? (
+              <div className="sidebar-logo" aria-hidden="true">
+                <img src="/stockguard-icon.png" alt="" className="sidebar-logo-img" />
+              </div>
+            ) : (
+              <div className="sidebar-brand">
+                <img src="/stockguard-logo.png" alt="Cyber Guard" className="sidebar-brand-logo" />
+                <p className="sidebar-tagline">Stok & Depo Yönetimi</p>
+              </div>
+            )}
+            <button
+              type="button"
+              className="sidebar-collapse-btn"
+              onClick={toggleCollapsed}
+              title={collapsed ? "Menüyü genişlet" : "Menüyü daralt"}
+              aria-label={collapsed ? "Menüyü genişlet" : "Menüyü daralt"}
+              aria-pressed={collapsed}
+            >
+              <span className="nav-icon">{collapsed ? icons.expand : icons.collapse}</span>
+            </button>
+          </div>
         </div>
 
         <nav className="sidebar-nav" aria-label="Ana menü">
@@ -536,6 +543,30 @@ function Layout({ children }) {
       </aside>
 
       <div className="workspace">
+        {mockMode.active && (
+          <div className="mock-data-banner" role="status">
+            <span className="mock-data-dot" aria-hidden="true" />
+            <span>
+              {mockMode.source === "mock" ? (
+                <>
+                  Canlı SAP yerine <strong>örnek (mock) veri</strong> gösteriliyor
+                  {mockMode.reason ? (
+                    <>
+                      {" "}
+                      — neden: <code>{mockMode.reason}</code>
+                    </>
+                  ) : null}
+                  . Karar için canlı kaynağı doğrulayın.
+                </>
+              ) : (
+                <>
+                  SAP verisi alınamadı
+                  {mockMode.reason ? ` (${mockMode.reason})` : ""}.
+                </>
+              )}
+            </span>
+          </div>
+        )}
         <header className="topbar">
           <nav className="topbar-context" aria-label="Sayfa konumu">
             <span className="topbar-kicker">{currentPage.section}</span>

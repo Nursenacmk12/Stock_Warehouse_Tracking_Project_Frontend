@@ -1,4 +1,6 @@
+import { getMockPagedMovements } from "../data/mockSapData.js";
 import { request } from "./apiClient.js";
+import { withSapMockFallback } from "./sapFallback.js";
 
 export const movementTypeOptions = [
   { value: "1", label: "Stok Giriş" },
@@ -51,18 +53,36 @@ export function normalizeMovement(movement = {}) {
 }
 
 export async function fetchMovements(filters = {}) {
-  const data = await request("/api/movements", {
-    query: {
-      productId: filters.productId,
-      warehouseId: filters.warehouseId,
-      type: filters.type,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-      userId: filters.userId,
-      page: filters.page ?? 1,
-      pageSize: filters.pageSize ?? 20,
+  const hasFilters = Boolean(
+    filters.productId || filters.warehouseId || filters.type || filters.dateFrom || filters.dateTo || filters.userId,
+  );
+  return withSapMockFallback(
+    async () => {
+      const data = await request("/api/movements", {
+        query: {
+          productId: filters.productId,
+          warehouseId: filters.warehouseId,
+          type: filters.type,
+          dateFrom: filters.dateFrom,
+          dateTo: filters.dateTo,
+          userId: filters.userId,
+          page: filters.page ?? 1,
+          pageSize: filters.pageSize ?? 20,
+        },
+      });
+      const paged = normalizePagedResult(data);
+      return { ...paged, items: paged.items.map(normalizeMovement) };
     },
-  });
-  const paged = normalizePagedResult(data);
-  return { ...paged, items: paged.items.map(normalizeMovement) };
+    () => {
+      const paged = normalizePagedResult(
+        getMockPagedMovements({ page: filters.page ?? 1, pageSize: filters.pageSize ?? 20 }),
+      );
+      return { ...paged, items: paged.items.map(normalizeMovement) };
+    },
+    {
+      label: "movements",
+      isEmpty: (paged) =>
+        !hasFilters && (!paged || ((paged.items?.length ?? 0) === 0 && Number(paged.totalCount ?? 0) === 0)),
+    },
+  );
 }

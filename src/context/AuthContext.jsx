@@ -1,5 +1,6 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import { loginWithApi } from "../services/authApi.js";
+import { beginEntraLoginRedirect, completeEntraRedirectLogin } from "../services/entraAuth.js";
 import { setUnauthorizedHandler, TOKEN_KEY, USER_KEY } from "../services/apiClient.js";
 
 function readSession() {
@@ -21,6 +22,19 @@ function readSession() {
   }
 }
 
+function applySession(result, setToken, setUser) {
+  const nextUser = {
+    userName: result.userName,
+    role: result.role,
+    expiresAt: result.expiresAt,
+  };
+
+  localStorage.setItem(TOKEN_KEY, result.token);
+  localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+  setToken(result.token);
+  setUser(nextUser);
+}
+
 const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
@@ -36,17 +50,34 @@ function AuthProvider({ children }) {
       return { success: false, message: result.message };
     }
 
-    const nextUser = {
-      userName: result.userName,
-      role: result.role,
-      expiresAt: result.expiresAt,
-    };
+    applySession(result, setToken, setUser);
+    return { success: true };
+  }, []);
 
-    localStorage.setItem(TOKEN_KEY, result.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
-    setToken(result.token);
-    setUser(nextUser);
+  /**
+   * Starts MSAL redirect to Microsoft. Session is applied on /auth/callback.
+   */
+  const loginWithMicrosoft = useCallback(async () => {
+    const result = await beginEntraLoginRedirect();
+    if (!result.ok) {
+      return { success: false, message: result.message };
+    }
+    return { success: true, redirecting: true };
+  }, []);
 
+  /**
+   * Finishes Entra redirect and stores the StockGuard JWT (localStorage Bearer).
+   */
+  const completeMicrosoftLogin = useCallback(async () => {
+    const result = await completeEntraRedirectLogin();
+    if (result.pendingRedirect) {
+      return { success: true, redirecting: true };
+    }
+    if (!result.ok) {
+      return { success: false, message: result.message, cancelled: result.cancelled };
+    }
+
+    applySession(result, setToken, setUser);
     return { success: true };
   }, []);
 
@@ -63,8 +94,16 @@ function AuthProvider({ children }) {
   }, [logout]);
 
   const value = useMemo(
-    () => ({ isAuthenticated, token, user, login, logout }),
-    [isAuthenticated, token, user, login, logout],
+    () => ({
+      isAuthenticated,
+      token,
+      user,
+      login,
+      loginWithMicrosoft,
+      completeMicrosoftLogin,
+      logout,
+    }),
+    [isAuthenticated, token, user, login, loginWithMicrosoft, completeMicrosoftLogin, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

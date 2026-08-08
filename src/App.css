@@ -874,6 +874,69 @@ a.btn {
   margin-top: 4px;
 }
 
+.auth-sso {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.auth-sso-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-sso-divider::before,
+.auth-sso-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.btn-microsoft {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  font-weight: 700;
+}
+
+.btn-microsoft:hover:not(:disabled) {
+  background: var(--surface-muted);
+  border-color: var(--primary);
+}
+
+.btn-microsoft:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.microsoft-glyph {
+  flex-shrink: 0;
+}
+
+.auth-sso-hint {
+  margin: 0;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.auth-card-narrow {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
 .form-footer {
   margin-top: 20px;
   color: var(--muted);

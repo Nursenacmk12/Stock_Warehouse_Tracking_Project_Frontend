@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, DataTable, EmptyState, KpiCard, StatusBadge, Toast } from "../components/ui/CommonUI.jsx";
@@ -61,15 +61,13 @@ function Dashboard() {
   const maxWarehouseQuantity = Math.max(1, ...warehouseTotals.map((item) => item.quantity));
   const maxCategoryQuantity = Math.max(1, ...categoryTotals.map((item) => item.quantity));
 
-  const productByCode = useMemo(() => ({}), []);
-
   const movementColumns = [
     { key: "date", header: "Tarih", render: (row) => formatDate(row.date) },
     { key: "type", header: "İşlem", render: (row) => <StatusBadge tone={row.typeCode}>{row.typeLabel}</StatusBadge> },
     {
       key: "productCode",
       header: "Malzeme",
-      render: (row) => productByCode[row.productCode]?.name ?? row.productCode,
+      render: (row) => row.productName || row.productCode || "—",
     },
     { key: "quantity", header: "Miktar", className: "numeric-cell" },
   ];
@@ -96,7 +94,9 @@ function Dashboard() {
               ? "Kontrol ediliyor..."
               : sapStatus === "healthy"
                 ? "Aktif"
-                : "Bağlantı kesik"}
+                : sapStatus === "mock"
+                  ? "Mock veri"
+                  : "Bağlantı kesik"}
           </span>
         </div>
       </section>

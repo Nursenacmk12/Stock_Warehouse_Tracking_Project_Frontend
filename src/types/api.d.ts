@@ -1,4 +1,7 @@
-/** OpenAPI-derived API contract types (manual baseline; generate with openapi-typescript). */
+/**
+ * Hand-written UI helpers for common API payloads.
+ * Full contract: `generated-api.d.ts` (npm run generate:api-types).
+ */
 export interface DashboardSummary {
   sapStatus: string;
   productCount: number;
@@ -24,3 +27,6 @@ export interface LowStockAlert {
   minLevel: number;
   deficit: number;
 }
+
+/** JWT role claim values — keep in sync with API RoleType / FE guards. */
+export type AppRole = "SuperAdmin" | "Admin" | "WarehouseManager" | "Manager";

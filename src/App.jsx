@@ -1,17 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/useAuth.js";
+import { isEntraLoginAvailable, probeEntraApiConfig } from "./services/entraAuth.js";
 import "./App.css";
 
 function App() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithMicrosoft } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [message, setMessage] = useState({ type: "", text: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [msSubmitting, setMsSubmitting] = useState(false);
+  const entraConfigured = isEntraLoginAvailable();
+  const [entraApiEnabled, setEntraApiEnabled] = useState(null);
+
+  useEffect(() => {
+    if (!entraConfigured) {
+      setEntraApiEnabled(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const res = await probeEntraApiConfig();
+      if (cancelled) return;
+      if (res.ok) {
+        setEntraApiEnabled(Boolean(res.data?.enabled));
+      } else {
+        // API unreachable — still show the button; click will surface errors.
+        setEntraApiEnabled(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entraConfigured]);
+
+  const showMicrosoftButton = entraConfigured;
+  const microsoftDisabled = msSubmitting || submitting || entraApiEnabled === false;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,6 +78,22 @@ function App() {
       type: "error",
       text: result.message || "E-posta veya şifre hatalı.",
     });
+  };
+
+  const handleMicrosoftLogin = async () => {
+    setMsSubmitting(true);
+    setMessage({ type: "", text: "" });
+
+    const result = await loginWithMicrosoft();
+    if (!result.success) {
+      setMsSubmitting(false);
+      setMessage({
+        type: "error",
+        text: result.message || "Microsoft girişi başlatılamadı.",
+      });
+      return;
+    }
+    // Redirect in progress — leave button in loading state.
   };
 
   return (
@@ -108,10 +154,42 @@ function App() {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary auth-submit" disabled={submitting}>
+            <button type="submit" className="btn btn-primary auth-submit" disabled={submitting || msSubmitting}>
               {submitting ? "Giriş yapılıyor…" : "Giriş Yap"}
             </button>
           </form>
+
+          {showMicrosoftButton && (
+            <div className="auth-sso">
+              <div className="auth-sso-divider" role="separator">
+                <span>veya</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-microsoft"
+                onClick={handleMicrosoftLogin}
+                disabled={microsoftDisabled}
+                title={
+                  entraApiEnabled === false
+                    ? "API tarafında Entra SSO kapalı (Authentication:Entra:Enabled)."
+                    : "Microsoft Entra ID ile giriş"
+                }
+              >
+                <MicrosoftGlyph />
+                {msSubmitting
+                  ? "Microsoft’a yönlendiriliyor…"
+                  : entraApiEnabled === false
+                    ? "Microsoft girişi (API kapalı)"
+                    : "Microsoft ile giriş"}
+              </button>
+              {entraApiEnabled === false && (
+                <p className="auth-sso-hint muted-text">
+                  Frontend env dolu; API’de <code>Authentication:Entra:Enabled=true</code> ve TenantId/ClientId
+                  ayarlanmalı.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="form-footer">
             <p>Hesap oluşturmak için sistem yöneticinize başvurun.</p>
@@ -125,6 +203,17 @@ function App() {
         </div>
       </section>
     </div>
+  );
+}
+
+function MicrosoftGlyph() {
+  return (
+    <svg className="microsoft-glyph" width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+    </svg>
   );
 }
 

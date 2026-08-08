@@ -1,4 +1,6 @@
+import { MOCK_WAREHOUSES } from "../data/mockSapData.js";
 import { request } from "./apiClient.js";
+import { withSapMockFallback } from "./sapFallback.js";
 
 export function normalizeWarehouse(warehouse = {}) {
   return {
@@ -27,8 +29,14 @@ function updatePayload(payload) {
 }
 
 export async function fetchWarehouses() {
-  const data = await request("/api/warehouses");
-  return Array.isArray(data) ? data.map(normalizeWarehouse) : [];
+  return withSapMockFallback(
+    async () => {
+      const data = await request("/api/warehouses");
+      return Array.isArray(data) ? data.map(normalizeWarehouse) : [];
+    },
+    () => MOCK_WAREHOUSES.map(normalizeWarehouse),
+    { label: "warehouses", isEmpty: (rows) => !Array.isArray(rows) || rows.length === 0 },
+  );
 }
 
 export async function createWarehouse(payload) {

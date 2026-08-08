@@ -1,4 +1,6 @@
+import { MOCK_PRODUCTS } from "../data/mockSapData.js";
 import { request } from "./apiClient.js";
+import { withSapMockFallback } from "./sapFallback.js";
 
 export function normalizeProduct(product = {}) {
   return {
@@ -34,8 +36,14 @@ function productUpdatePayload(payload) {
 }
 
 export async function fetchProducts() {
-  const data = await request("/api/products");
-  return Array.isArray(data) ? data.map(normalizeProduct) : [];
+  return withSapMockFallback(
+    async () => {
+      const data = await request("/api/products");
+      return Array.isArray(data) ? data.map(normalizeProduct) : [];
+    },
+    () => MOCK_PRODUCTS.map(normalizeProduct),
+    { label: "products", isEmpty: (rows) => !Array.isArray(rows) || rows.length === 0 },
+  );
 }
 
 export async function createProduct(payload) {

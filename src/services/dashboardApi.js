@@ -1,5 +1,7 @@
+import { MOCK_DASHBOARD_SUMMARY } from "../data/mockSapData.js";
 import { request } from "./apiClient.js";
 import { normalizeMovement } from "./movementApi.js";
+import { withSapMockFallback } from "./sapFallback.js";
 
 function normalizeDistribution(item = {}) {
   return {
@@ -31,8 +33,21 @@ export function normalizeDashboardSummary(data = {}) {
 }
 
 export async function fetchDashboardSummary() {
-  const data = await request("/api/dashboard/summary");
-  return normalizeDashboardSummary(data);
+  return withSapMockFallback(
+    async () => {
+      const data = await request("/api/dashboard/summary");
+      return normalizeDashboardSummary(data);
+    },
+    () => normalizeDashboardSummary(MOCK_DASHBOARD_SUMMARY),
+    {
+      label: "dashboard",
+      isEmpty: (summary) =>
+        !summary ||
+        (Number(summary.productCount) === 0 &&
+          Number(summary.totalStockQuantity) === 0 &&
+          (summary.warehouseStockDistribution?.length ?? 0) === 0),
+    },
+  );
 }
 
 export async function fetchHealthStatus() {

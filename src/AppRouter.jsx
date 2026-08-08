@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import App from "./App.jsx";
+import AuthCallback from "./pages/AuthCallback.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Products from "./pages/Products.jsx";
 import Warehouses from "./pages/Warehouses.jsx";
@@ -45,6 +46,7 @@ export function AppRoutes() {
       <Suspense fallback={<LoadingState text="Sayfa yükleniyor..." />}>
       <Routes>
         <Route path="/" element={<App />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/register" element={<Navigate to="/admin/users/new" replace />} />
         <Route
           path="/dashboard"
@@ -102,6 +104,7 @@ export function AppRoutes() {
             </PrivateRoute>
           }
         />
+        {/* Manager ≠ Reports: Manager may use Analytics only; reports stay Admin+. */}
         <Route
           path="/reports"
           element={
